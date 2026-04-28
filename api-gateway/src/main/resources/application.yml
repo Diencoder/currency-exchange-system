@@ -1,0 +1,34 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/users/**
+        - id: exchange-service
+          uri: lb://exchange-service
+          predicates:
+            - Path=/api/exchange/**
+        - id: transaction-service
+          uri: lb://transaction-service
+          predicates:
+            - Path=/api/transactions/**
+        - id: p2p-service
+          uri: lb://p2p-service
+          predicates:
+            - Path=/api/p2p/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/

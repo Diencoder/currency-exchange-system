@@ -1,0 +1,25 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: transaction-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/transaction_db?createDatabaseIfNotExist=true
+    username: root
+    password: root
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/

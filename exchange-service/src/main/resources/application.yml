@@ -1,0 +1,23 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: exchange-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/currency_db?createDatabaseIfNotExist=true
+    username: root
+    password: root
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
