@@ -2,17 +2,17 @@ package com.user.service.consumer;
 
 import com.user.common.dto.P2PEvent;
 import com.user.service.service.WalletService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class P2PConsumer {
 
-    @Autowired
-    private WalletService walletService;
+    private final WalletService walletService;
 
     @KafkaListener(topics = "${app.kafka.p2p-topic}", groupId = "user-service-group")
     public void consumeP2PEvent(P2PEvent event) {

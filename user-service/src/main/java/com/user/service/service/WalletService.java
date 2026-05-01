@@ -6,6 +6,9 @@ import com.user.service.entity.Wallet;
 import com.user.service.repository.UserRepository;
 import com.user.service.repository.WalletRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.user.service.exception.InsufficientBalanceException;
+import com.user.service.exception.ResourceNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,13 +17,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class WalletService {
 
-    @Autowired
-    private WalletRepository walletRepository;
-
-    @Autowired
-    private UserRepository userRepository;
+    private final WalletRepository walletRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public void createDefaultWallet(User user) {
@@ -40,14 +41,31 @@ public class WalletService {
     }
 
     @Transactional
+    public WalletDTO deposit(Long userId, String currencyCode, BigDecimal amount) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+
+        Wallet wallet = walletRepository.findByUserIdAndCurrencyCode(userId, currencyCode)
+                .orElseGet(() -> Wallet.builder()
+                        .user(user)
+                        .currencyCode(currencyCode)
+                        .balance(BigDecimal.ZERO)
+                        .lockedBalance(BigDecimal.ZERO)
+                        .build());
+
+        wallet.setBalance(wallet.getBalance().add(amount));
+        return convertToDTO(walletRepository.save(wallet));
+    }
+
+    @Transactional
     public void transferP2P(Long sellerId, Long buyerId, String currencyCode, BigDecimal amount) {
         Wallet sellerWallet = walletRepository.findByUserIdAndCurrencyCode(sellerId, currencyCode)
-                .orElseThrow(() -> new RuntimeException("Seller wallet not found for " + currencyCode));
+                .orElseThrow(() -> new ResourceNotFoundException("Seller wallet not found for " + currencyCode));
         
         Wallet buyerWallet = walletRepository.findByUserIdAndCurrencyCode(buyerId, currencyCode)
                 .orElseGet(() -> {
                     User buyer = userRepository.findById(buyerId)
-                            .orElseThrow(() -> new RuntimeException("Buyer not found"));
+                            .orElseThrow(() -> new ResourceNotFoundException("Buyer user not found: " + buyerId));
                     return Wallet.builder()
                             .user(buyer)
                             .currencyCode(currencyCode)
@@ -57,7 +75,7 @@ public class WalletService {
                 });
 
         if (sellerWallet.getLockedBalance().compareTo(amount) < 0) {
-            throw new RuntimeException("Insufficient locked balance for seller");
+            throw new InsufficientBalanceException("Seller " + sellerId + " has insufficient locked balance: " + amount);
         }
 
         // Subtract from seller's locked balance

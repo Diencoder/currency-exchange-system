@@ -1,54 +1,45 @@
 package com.user.p2p.controller;
 
-import com.user.p2p.entity.EscrowTransaction;
-import com.user.p2p.entity.P2PListing;
+import com.user.p2p.dto.EscrowRequest;
+import com.user.p2p.dto.EscrowTransactionDTO;
+import com.user.p2p.dto.P2PListingDTO;
+import com.user.p2p.dto.P2PListingRequest;
 import com.user.p2p.service.P2PService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/p2p")
+@RequiredArgsConstructor
 public class P2PController {
 
-    @Autowired
-    private P2PService p2pService;
+    private final P2PService p2pService;
 
     @GetMapping("/listings")
-    public ResponseEntity<List<P2PListing>> getActiveListings() {
+    public ResponseEntity<List<P2PListingDTO>> getActiveListings() {
         return ResponseEntity.ok(p2pService.getActiveListings());
     }
 
     @PostMapping("/listings")
-    public ResponseEntity<P2PListing> createListing(@RequestBody P2PListing listing) {
-        return ResponseEntity.ok(p2pService.createListing(listing));
+    public ResponseEntity<P2PListingDTO> createListing(@RequestBody P2PListingRequest request) {
+        return ResponseEntity.ok(p2pService.createListing(request));
     }
 
     @PostMapping("/escrow")
-    public ResponseEntity<?> initiateEscrow(@RequestBody Map<String, Object> request) {
-        try {
-            Long listingId = Long.valueOf(request.get("listingId").toString());
-            Long buyerId = Long.valueOf(request.get("buyerId").toString());
-            BigDecimal amount = new BigDecimal(request.get("amount").toString());
-            String idempotencyKey = request.getOrDefault("idempotencyKey", "").toString();
-
-            EscrowTransaction escrow = p2pService.initiateEscrow(listingId, buyerId, amount, idempotencyKey);
-            return ResponseEntity.ok(escrow);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<EscrowTransactionDTO> initiateEscrow(@RequestBody EscrowRequest request) {
+        return ResponseEntity.ok(p2pService.initiateEscrow(
+                request.getListingId(),
+                request.getBuyerId(),
+                request.getAmount(),
+                request.getIdempotencyKey()
+        ));
     }
 
     @PostMapping("/escrow/{id}/release")
-    public ResponseEntity<?> releaseEscrow(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(p2pService.releaseEscrow(id));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<EscrowTransactionDTO> releaseEscrow(@PathVariable Long id) {
+        return ResponseEntity.ok(p2pService.releaseEscrow(id));
     }
 }

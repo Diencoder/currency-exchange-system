@@ -1,9 +1,10 @@
 package com.user.transaction.controller;
 
 import com.user.common.dto.TransactionStatus;
-import com.user.transaction.entity.Transaction;
+import com.user.transaction.dto.TransactionDTO;
+import com.user.transaction.dto.TransactionRequest;
 import com.user.transaction.service.TransactionService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,45 +13,42 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/transactions")
+@RequiredArgsConstructor
 public class TransactionController {
 
-    @Autowired
-    private TransactionService transactionService;
+    private final TransactionService transactionService;
 
     // Lấy lịch sử giao dịch theo userId
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Transaction>> getByUser(@PathVariable Long userId) {
+    public ResponseEntity<List<TransactionDTO>> getByUser(@PathVariable Long userId) {
         return ResponseEntity.ok(transactionService.getTransactionsByUserId(userId));
     }
 
+    // Thống kê tổng số giao dịch đã xử lý trong phiên này (Demo Thread-safety)
+    @GetMapping("/stats/total")
+    public ResponseEntity<Map<String, Long>> getTotalStats() {
+        return ResponseEntity.ok(Map.of("totalProcessedInSession", transactionService.getTotalProcessedCount()));
+    }
+
     @GetMapping("/seller/{sellerId}")
-    public ResponseEntity<List<Transaction>> getBySeller(@PathVariable Long sellerId) {
+    public ResponseEntity<List<TransactionDTO>> getBySeller(@PathVariable Long sellerId) {
         return ResponseEntity.ok(transactionService.getTransactionsByUserId(sellerId));
     }
 
     @GetMapping("/buyer/{buyerId}")
-    public ResponseEntity<List<Transaction>> getByBuyer(@PathVariable Long buyerId) {
+    public ResponseEntity<List<TransactionDTO>> getByBuyer(@PathVariable Long buyerId) {
         return ResponseEntity.ok(transactionService.getTransactionsByUserId(buyerId));
     }
 
     // Tạo giao dịch mới (bao gồm kiểm tra Idempotency Key)
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody Transaction transaction) {
-        try {
-            Transaction saved = transactionService.createTransaction(transaction);
-            return ResponseEntity.ok(saved);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<TransactionDTO> create(@RequestBody TransactionRequest request) {
+        return ResponseEntity.ok(transactionService.createTransaction(request));
     }
 
     // Cập nhật trạng thái giao dịch
     @PutMapping("/{id}/status")
-    public ResponseEntity<?> updateStatus(@PathVariable Long id, @RequestParam TransactionStatus status) {
-        try {
-            return ResponseEntity.ok(transactionService.updateStatus(id, status));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<TransactionDTO> updateStatus(@PathVariable Long id, @RequestParam TransactionStatus status) {
+        return ResponseEntity.ok(transactionService.updateStatus(id, status));
     }
 }

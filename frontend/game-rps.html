@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rock Paper Scissors - Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/game-rps.css">
+</head>
+<body class="dark-mode">
+    <div class="game-container">
+        <!-- Header -->
+        <header class="game-header">
+            <button onclick="window.history.back()" class="back-btn"><i class="fas fa-chevron-left"></i></button>
+            <div class="score-board">
+                <div class="score-item">
+                    <span class="label">YOU</span>
+                    <span id="player-score" class="value">0</span>
+                </div>
+                <div class="score-divider">:</div>
+                <div class="score-item">
+                    <span class="label">CPU</span>
+                    <span id="cpu-score" class="value">0</span>
+                </div>
+            </div>
+            <div style="width: 40px;"></div>
+        </header>
+
+        <!-- Play Area -->
+        <main class="play-area">
+            <div class="cpu-side">
+                <div id="cpu-choice" class="choice-display skeleton">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <p>Computer is thinking...</p>
+            </div>
+
+            <div class="result-middle">
+                <h2 id="result-text">Choose your move!</h2>
+            </div>
+
+            <div class="player-side">
+                <div id="player-choice" class="choice-display player-wait">
+                    <i class="fas fa-question"></i>
+                </div>
+            </div>
+        </main>
+
+        <!-- Controls -->
+        <footer class="game-controls">
+            <button onclick="playMove('rock')" class="move-btn" id="btn-rock">
+                <div class="icon-circle rock-bg"><i class="fas fa-hand-rock"></i></div>
+                <span>Rock</span>
+            </button>
+            <button onclick="playMove('paper')" class="move-btn" id="btn-paper">
+                <div class="icon-circle paper-bg"><i class="fas fa-hand-paper"></i></div>
+                <span>Paper</span>
+            </button>
+            <button onclick="playMove('scissors')" class="move-btn" id="btn-scissors">
+                <div class="icon-circle scissors-bg"><i class="fas fa-hand-scissors"></i></div>
+                <span>Scissors</span>
+            </button>
+        </footer>
+
+        <!-- Achievement Popup (Optional) -->
+        <div id="game-toast" class="toast-hidden">
+            <span id="toast-msg">Combo x2!</span>
+        </div>
+    </div>
+
+    <script type="module">
+        import { RockPaperScissors } from './js/modules/game.js';
+        const game = new RockPaperScissors();
+        window.playMove = (move) => game.playMove(move);
+    </script>
+</body>
+</html>

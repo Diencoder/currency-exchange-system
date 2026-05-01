@@ -3,18 +3,15 @@ package com.user.p2p.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "escrow_transactions")
 @Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class EscrowTransaction {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class EscrowTransaction extends BaseEntity {
 
     @Column(nullable = false)
     private Long listingId;
@@ -36,9 +33,6 @@ public class EscrowTransaction {
 
     private boolean buyerConfirmed = false;
     private boolean sellerConfirmed = false;
-
-    private LocalDateTime createdAt = LocalDateTime.now();
-    private LocalDateTime updatedAt = LocalDateTime.now();
 
     public enum EscrowStatus { HOLDING, RELEASED, DISPUTED, CANCELLED, REFUNDED }
 }

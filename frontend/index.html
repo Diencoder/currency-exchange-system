@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Binance Pro | Currency Exchange</title>
     <meta name="description" content="Professional crypto & currency exchange platform">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
 
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,467 +14,519 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-    <link rel="stylesheet" href="css/style.css?v=4">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <link rel="stylesheet" href="css/style.css?v=20">
 </head>
+
 <body>
-
-<!-- ===================== TOAST CONTAINER ===================== -->
-<div id="toast-container"></div>
-
-<!-- ===================== AUTH SCREEN ===================== -->
-<div id="auth-screen" style="display:none; position:fixed; inset:0; background:var(--bg-main); z-index:1000; overflow-y:auto;">
-    <div style="min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2rem;">
-
-        <!-- Logo -->
-        <div style="text-align:center; margin-bottom:2rem;">
-            <div style="width:56px; height:56px; background:var(--primary); border-radius:16px; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem;">
-                <i data-lucide="zap" style="width:28px; color:#000;"></i>
-            </div>
-            <h1 style="font-size:1.6rem; font-weight:800; letter-spacing:-0.5px;">Binance Pro</h1>
-            <p style="color:var(--text-secondary); font-size:0.85rem; margin-top:4px;">Professional Currency Exchange</p>
-        </div>
-
-        <!-- Auth Card -->
-        <div style="width:100%; max-width:400px; background:var(--bg-surface); border-radius:16px; padding:2rem; border:1px solid var(--border-color);">
-            <!-- Tabs -->
-            <div style="display:flex; gap:0; background:var(--bg-main); border-radius:8px; padding:4px; margin-bottom:1.5rem;">
-                <button id="tab-login" onclick="switchAuthTab('login')" style="flex:1; padding:0.6rem; border:none; border-radius:6px; font-weight:600; font-size:0.85rem; cursor:pointer; background:var(--primary); color:#000; transition:all 0.2s;">Login</button>
-                <button id="tab-signup" onclick="switchAuthTab('signup')" style="flex:1; padding:0.6rem; border:none; border-radius:6px; font-weight:600; font-size:0.85rem; cursor:pointer; background:transparent; color:var(--text-secondary); transition:all 0.2s;">Register</button>
-            </div>
-
-            <!-- Login Form -->
-            <div id="form-login">
-                <div style="margin-bottom:1rem;">
-                    <label style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:6px;">Username</label>
-                    <input id="login-username" type="text" placeholder="Enter username" style="width:100%; background:var(--bg-main); border:1px solid var(--border-color); border-radius:8px; padding:0.75rem 1rem; color:var(--text-primary); font-size:0.9rem; outline:none; box-sizing:border-box;">
-                </div>
-                <div style="margin-bottom:1.5rem; position:relative;">
-                    <label style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:6px;">Password</label>
-                    <input id="login-password" type="password" placeholder="Enter password" style="width:100%; background:var(--bg-main); border:1px solid var(--border-color); border-radius:8px; padding:0.75rem 1rem; color:var(--text-primary); font-size:0.9rem; outline:none; box-sizing:border-box;">
-                </div>
-                <button onclick="performLogin()" id="login-btn" style="width:100%; background:var(--primary); color:#000; border:none; border-radius:10px; padding:0.9rem; font-weight:700; font-size:1rem; cursor:pointer; transition:opacity 0.2s;">
-                    <span id="login-btn-text">Login</span>
-                </button>
-                <p style="text-align:center; margin-top:1rem; font-size:0.8rem; color:var(--text-secondary);">
-                    Don't have an account? <span onclick="switchAuthTab('signup')" style="color:var(--primary); cursor:pointer; font-weight:600;">Register now</span>
-                </p>
-            </div>
-
-            <!-- Register Form -->
-            <div id="form-signup" style="display:none;">
-                <div style="margin-bottom:1rem;">
-                    <label style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:6px;">Username</label>
-                    <input id="signup-username" type="text" placeholder="Choose a username" style="width:100%; background:var(--bg-main); border:1px solid var(--border-color); border-radius:8px; padding:0.75rem 1rem; color:var(--text-primary); font-size:0.9rem; outline:none; box-sizing:border-box;">
-                </div>
-                <div style="margin-bottom:1rem;">
-                    <label style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:6px;">Email</label>
-                    <input id="signup-email" type="email" placeholder="Enter your email" style="width:100%; background:var(--bg-main); border:1px solid var(--border-color); border-radius:8px; padding:0.75rem 1rem; color:var(--text-primary); font-size:0.9rem; outline:none; box-sizing:border-box;">
-                </div>
-                <div style="margin-bottom:1.5rem;">
-                    <label style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:6px;">Password</label>
-                    <input id="signup-password" type="password" placeholder="Create a strong password" style="width:100%; background:var(--bg-main); border:1px solid var(--border-color); border-radius:8px; padding:0.75rem 1rem; color:var(--text-primary); font-size:0.9rem; outline:none; box-sizing:border-box;">
-                </div>
-                <button onclick="performSignup()" id="signup-btn" style="width:100%; background:var(--primary); color:#000; border:none; border-radius:10px; padding:0.9rem; font-weight:700; font-size:1rem; cursor:pointer; transition:opacity 0.2s;">
-                    <span id="signup-btn-text">Create Account</span>
-                </button>
-                <p style="text-align:center; margin-top:1rem; font-size:0.8rem; color:var(--text-secondary);">
-                    Already have an account? <span onclick="switchAuthTab('login')" style="color:var(--primary); cursor:pointer; font-weight:600;">Login</span>
-                </p>
-            </div>
-        </div>
-
-        <p style="margin-top:1.5rem; font-size:0.75rem; color:var(--text-secondary); text-align:center;">
-            Protected by JWT Security · Encrypted · 24h Session
-        </p>
-    </div>
-</div>
-
-<!-- ===================== MAIN APP ===================== -->
-<div id="main-app" style="display:none;">
-<div class="app-wrapper fade-in">
-    <!-- Header -->
-    <header class="header">
-        <div class="header-left" style="display:flex; align-items:center; gap:10px;">
-            <div id="user-avatar" style="width:32px; height:32px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; font-weight:800; color:#000; font-size:0.8rem; cursor:pointer;" onclick="openSettings()">?</div>
-        </div>
-        <div class="header-center" style="flex:1; margin:0 15px;">
-            <div style="background:var(--bg-surface); padding:6px 12px; border-radius:20px; display:flex; align-items:center; gap:8px; border:1px solid var(--border-color);">
-                <i data-lucide="search" style="width:16px; color:var(--text-secondary);"></i>
-                <input id="asset-search" type="text" placeholder="Search coins..." style="background:transparent; border:none; color:var(--text-primary); font-size:0.85rem; outline:none; width:100%;">
-            </div>
-        </div>
-        <div class="header-right" style="display:flex; gap:15px; align-items:center;">
-            <div class="notif-bell" id="bell-trigger">
-                <i data-lucide="bell"></i>
-                <div class="notif-dot" id="notif-dot" style="display:none;"></div>
-            </div>
-            <div onclick="performLogout()" title="Logout" style="cursor:pointer; color:var(--text-secondary);">
-                <i data-lucide="log-out" style="width:18px;"></i>
-            </div>
-        </div>
-    </header>
-
-    <!-- Balance Section -->
-    <section class="balance-section fade-in">
-        <div class="balance-header">
-            <span>Portfolio Balance</span>
-            <i data-lucide="eye" style="width:14px;"></i>
-        </div>
-        <div class="main-balance" id="total-balance">$0.00 USD</div>
-        <div class="sub-balance up">
-            <i data-lucide="trending-up" style="width:14px; vertical-align:middle;"></i>
-            <span id="balance-change">+0.00%</span>
-        </div>
-    </section>
-
-    <!-- Action Row -->
-    <section class="action-row fade-in">
-        <div class="action-btn" id="action-send">
-            <div class="circle"><i data-lucide="arrow-up"></i></div>
-            <span>Send</span>
-        </div>
-        <div class="action-btn" id="action-receive">
-            <div class="circle"><i data-lucide="arrow-down"></i></div>
-            <span>Receive</span>
-        </div>
-        <div class="action-btn" id="open-swap">
-            <div class="circle"><i data-lucide="repeat"></i></div>
-            <span>Swap</span>
-        </div>
-        <div class="action-btn" id="action-history">
-            <div class="circle"><i data-lucide="history"></i></div>
-            <span>History</span>
-        </div>
-    </section>
-
-    <!-- Home View -->
-    <div id="home-view" class="view-content active">
-        <div class="asset-tabs fade-in">
-            <div class="tab">Fiat</div>
-            <div class="tab active">Crypto</div>
-            <div class="tab">NFTs</div>
-        </div>
-        <section class="asset-container fade-in" id="asset-list"></section>
-    </div>
-
-    <!-- Market View -->
-    <div id="market-view" class="view-content" style="display:none; padding:0;">
-        <div class="market-header">
-            <div style="display:flex; justify-content:space-between; align-items:start;">
-                <div>
-                    <h3 id="market-pair-title" style="margin:0; font-size:1.25rem;">USD / VND</h3>
-                    <p style="color:var(--text-secondary); font-size:0.8rem; margin-top:4px;">Live Trading View</p>
-                </div>
-                <div style="text-align:right;">
-                    <div id="market-pair-price" style="font-size:1.25rem; font-weight:700;">--</div>
-                    <div class="sub-balance up" id="market-pair-change" style="font-size:0.8rem;">+0.00%</div>
-                </div>
-            </div>
-            <div class="chart-controls">
-                <button class="t-btn active" data-tf="1m">1m</button>
-                <button class="t-btn" data-tf="5m">5m</button>
-                <button class="t-btn" data-tf="1h">1h</button>
-                <button class="t-btn" data-tf="1D">1D</button>
-                <div style="border-left:1px solid #474D57; margin:0 4px; height:16px;"></div>
-                <button class="t-btn active" id="toggle-ma">MA</button>
-                <button class="t-btn active" id="toggle-vol">VOL</button>
-            </div>
-        </div>
-        <div id="market-chart" style="height:400px; width:100%;"></div>
-    </div>
-
-    <!-- P2P View -->
-    <div id="p2p-view" class="view-content" style="display:none; padding:0;">
-        <div class="market-header" style="padding:1rem;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                <h3 style="margin:0;">P2P Trading</h3>
-                <button onclick="openCreateListing()" style="background:var(--primary); border:none; padding:6px 12px; border-radius:6px; font-weight:600; font-size:0.85rem; cursor:pointer;">Post Ad</button>
-            </div>
-            <div class="asset-tabs" style="padding:0; margin-bottom:0;">
-                <div class="tab active" onclick="switchP2PTab('BUY')" id="p2p-buy-tab">Buy</div>
-                <div class="tab" onclick="switchP2PTab('SELL')" id="p2p-sell-tab">Sell</div>
-                <div style="flex:1;"></div>
-                <div style="background:var(--bg-main); padding:4px 8px; border-radius:8px; display:flex; align-items:center; gap:6px; border:1px solid var(--border-color);">
-                    <i data-lucide="search" style="width:14px; color:var(--text-secondary);"></i>
-                    <input id="p2p-search" type="text" placeholder="Search ads..." style="background:transparent; border:none; color:var(--text-primary); font-size:0.75rem; outline:none; width:80px;">
-                </div>
-            </div>
-        </div>
-        <div id="p2p-ads-container" style="padding:10px;">
-            <!-- P2P Ads will be injected here -->
-        </div>
-    </div>
-
-    <!-- Discover View -->
-    <div id="discover-view" class="view-content" style="display:none; padding:1rem;">
-        <h3 style="margin-bottom:1rem;">Market Trends</h3>
-        
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:1.5rem;">
-            <div style="background:var(--bg-surface); padding:1rem; border-radius:12px; border:1px solid rgba(14, 203, 129, 0.2);">
-                <p style="color:var(--text-secondary); font-size:0.75rem;">Top Gainer</p>
-                <div id="top-gainer-card">
-                    <h4 style="color:var(--up-color); margin:4px 0;">--</h4>
-                    <p style="font-size:0.75rem;">+0.00%</p>
-                </div>
-            </div>
-            <div style="background:var(--bg-surface); padding:1rem; border-radius:12px; border:1px solid rgba(246, 70, 93, 0.2);">
-                <p style="color:var(--text-secondary); font-size:0.75rem;">Top Loser</p>
-                <div id="top-loser-card">
-                    <h4 style="color:var(--down-color); margin:4px 0;">--</h4>
-                    <p style="font-size:0.75rem;">-0.00%</p>
-                </div>
-            </div>
-        </div>
-
-        <section>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                <h4 style="margin:0;">24h Ranking</h4>
-                <span style="font-size:0.8rem; color:var(--primary); cursor:pointer;">View All</span>
-            </div>
-            <div id="trends-list" style="display:flex; flex-direction:column; gap:12px;">
-                <!-- Trends will be injected here -->
-            </div>
-        </section>
-
-        <section style="margin-top:2rem;">
-            <h4 style="margin-bottom:1rem;">Market News</h4>
-            <div class="asset-item" style="padding:10px; background:var(--bg-surface); border-radius:12px; margin-bottom:10px;">
-                <div class="asset-left">
-                    <div style="width:40px; height:40px; background:#474D57; border-radius:8px; display:flex; align-items:center; justify-content:center;">
-                        <i data-lucide="newspaper" style="width:20px; color:var(--text-secondary);"></i>
-                    </div>
-                    <div>
-                        <p style="font-size:0.85rem; font-weight:600; margin:0;">Bitcoin Surges Past Internal Resistance</p>
-                        <p style="font-size:0.7rem; color:var(--text-secondary);">2 hours ago • Market Insight</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </div>
-
-    <!-- Settings / Profile View -->
-    <div id="settings-view" class="view-content" style="display:none; padding:1rem;">
-        <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
-            <div id="settings-avatar" style="width:56px; height:56px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; font-weight:800; color:#000; font-size:1.2rem;">?</div>
-            <div>
-                <h3 id="settings-username" style="margin:0;">Account</h3>
-                <p id="settings-email" style="color:var(--text-secondary); font-size:0.8rem; margin:4px 0 0;">--</p>
-            </div>
-        </div>
-
-        <!-- Rewards Center -->
-        <div style="background:var(--bg-surface); border-radius:12px; padding:1rem; margin-bottom:1rem; border:1px solid rgba(243, 186, 47, 0.2);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <i data-lucide="gift" style="color:var(--primary); width:20px;"></i>
-                    <p style="font-weight:700; margin:0;">Rewards Center</p>
-                </div>
-                <span id="reward-points" style="font-size:0.75rem; background:rgba(243, 186, 47, 0.1); color:var(--primary); padding:2px 8px; border-radius:10px; font-weight:600;">Earn USD</span>
-            </div>
-            <div id="quest-list" style="display:flex; flex-direction:column; gap:12px;">
-                <!-- Quests will be injected here -->
-                <div class="skeleton-text" style="width:100%;"></div>
-            </div>
-        </div>
-
-        <!-- 2FA Section -->
-        <div style="background:var(--bg-surface); border-radius:12px; padding:1rem; margin-bottom:1rem;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                    <p style="font-weight:600; margin:0;">Two-Factor Auth (2FA)</p>
-                    <p style="color:var(--text-secondary); font-size:0.8rem; margin:4px 0 0;" id="twofa-status">Status: Disabled</p>
-                </div>
-                <button id="toggle-2fa-btn" onclick="toggle2FA()" style="background:var(--primary); color:#000; border:none; padding:0.5rem 1rem; border-radius:8px; font-weight:600; cursor:pointer; font-size:0.85rem;">Enable</button>
-            </div>
-            <!-- QR Code display area -->
-            <div id="twofa-qr-area" style="display:none; margin-top:1rem; text-align:center; padding:1rem; background:var(--bg-main); border-radius:8px;">
-                <p style="font-size:0.85rem; margin-bottom:0.5rem; color:var(--text-secondary);">Scan with Google Authenticator</p>
-                <div id="qr-code-display" style="width:160px; height:160px; background:white; margin:0.5rem auto; border-radius:8px; display:flex; align-items:center; justify-content:center; padding:8px;">
-                    <img id="qr-img" src="" alt="QR Code" style="width:100%; height:100%; object-fit:contain;">
-                </div>
-                <p style="font-size:0.75rem; color:var(--text-secondary); margin-top:0.5rem;">Or enter secret key manually:</p>
-                <p id="totp-secret" style="font-family:monospace; font-size:0.8rem; color:var(--primary); word-break:break-all; margin-top:4px;"></p>
-            </div>
-        </div>
-
-        <!-- Security Info -->
-        <div style="background:var(--bg-surface); border-radius:12px; padding:1rem; margin-bottom:1rem;">
-            <p style="font-weight:600; margin:0 0 0.75rem;">Security Overview</p>
-            <div style="display:flex; justify-content:space-between; padding:0.5rem 0; border-bottom:1px solid var(--border-color);">
-                <span style="font-size:0.85rem; color:var(--text-secondary);">Password</span>
-                <span style="font-size:0.85rem; color:var(--up-color);">✓ Set</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; padding:0.5rem 0;">
-                <span style="font-size:0.85rem; color:var(--text-secondary);">JWT Session</span>
-                <span style="font-size:0.85rem; color:var(--up-color);">✓ Active (24h)</span>
-            </div>
-        </div>
-
-        <!-- System Status -->
-        <div style="background:var(--bg-surface); border-radius:12px; padding:1rem; margin-bottom:1.5rem;">
-            <p style="font-weight:600; margin:0 0 0.75rem;">System Health</p>
-            <div id="service-status-list" style="display:flex; flex-direction:column; gap:8px;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:0.8rem; color:var(--text-secondary);">API Gateway</span>
-                    <span style="width:8px; height:8px; border-radius:50%; background:var(--up-color);"></span>
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:0.8rem; color:var(--text-secondary);">User Service</span>
-                    <span style="width:8px; height:8px; border-radius:50%; background:var(--up-color);"></span>
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:0.8rem; color:var(--text-secondary);">Exchange Engine</span>
-                    <span style="width:8px; height:8px; border-radius:50%; background:var(--up-color);"></span>
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:0.8rem; color:var(--text-secondary);">Kafka Broker</span>
-                    <span style="width:8px; height:8px; border-radius:50%; background:var(--up-color);"></span>
-                </div>
-            </div>
-        </div>
-
-        <button onclick="performLogout()" style="width:100%; background:#2B3139; color:var(--down-color); border:none; padding:0.9rem; border-radius:10px; font-weight:700; font-size:0.95rem; cursor:pointer;">
-            <i data-lucide="log-out" style="width:16px; vertical-align:middle; margin-right:6px;"></i>
-            Sign Out
-        </button>
-    </div>
-
-    <!-- Bottom Nav -->
-    <nav class="bottom-nav">
-        <div class="nav-item active" id="nav-home">
-            <i data-lucide="home"></i>
-            <span>Home</span>
-        </div>
-        <div class="nav-item" id="nav-market">
-            <i data-lucide="bar-chart-2"></i>
-            <span>Markets</span>
-        </div>
-        <div class="nav-item" id="nav-p2p">
-            <i data-lucide="users"></i>
-            <span>P2P</span>
-        </div>
-        <div class="nav-item" id="nav-discover">
-            <i data-lucide="compass"></i>
-            <span>Discover</span>
-        </div>
-        <div class="nav-item" id="nav-settings">
-            <i data-lucide="user"></i>
-            <span>Profile</span>
-        </div>
-    </nav>
-
-    <!-- Swap Modal - Pro Version -->
-    <div id="swap-overlay" style="display:none; position:fixed; inset:0; background:var(--bg-main); z-index:200; overflow-y:auto;">
-        <header class="header" style="position:sticky; top:0; z-index:10;">
-            <div id="close-swap" onclick="document.getElementById('swap-overlay').style.display='none'" style="cursor:pointer; display:flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:50%; transition:background 0.2s;">
-                <i data-lucide="arrow-left"></i>
-            </div>
-            <span style="font-weight:700; font-size:1.1rem;">Swap</span>
-            <i data-lucide="info"></i>
-        </header>
-        <div class="swap-modal">
-            <div class="swap-box">
-                <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
-                    <p class="label">Spend</p>
-                    <p class="label" id="from-balance-label" style="color:var(--text-secondary);">Balance: --</p>
-                </div>
-                <div class="swap-input-grp">
-                    <input type="number" id="swap-input" placeholder="0" min="0">
-                    <select id="from-select" style="background:#2B3139; color:white; border:none; padding:6px 10px; border-radius:8px; font-weight:700; font-size:0.9rem; cursor:pointer; outline:none;">
-                        <option value="USD">USD</option>
-                        <option value="VND">VND</option>
-                        <option value="BTC">BTC</option>
-                        <option value="ETH">ETH</option>
-                        <option value="BNB">BNB</option>
-                    </select>
-                </div>
-            </div>
-            <div style="text-align:center; margin:4px auto; position:relative; z-index:2;">
-                <div class="circle" id="flip-btn" style="width:36px; height:36px; background:var(--bg-surface-hover); margin:0 auto; border:2px solid var(--bg-main); cursor:pointer;">
-                    <i data-lucide="arrow-down-up" style="width:16px; color:var(--primary);"></i>
-                </div>
-            </div>
-            <div class="swap-box">
-                <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
-                    <p class="label">Receive (estimated)</p>
-                </div>
-                <div class="swap-input-grp">
-                    <input type="number" id="swap-output" placeholder="0" readonly style="color:var(--up-color);">
-                    <select id="to-select" style="background:#2B3139; color:white; border:none; padding:6px 10px; border-radius:8px; font-weight:700; font-size:0.9rem; cursor:pointer; outline:none;">
-                        <option value="VND" selected>VND</option>
-                        <option value="USD">USD</option>
-                        <option value="BTC">BTC</option>
-                        <option value="ETH">ETH</option>
-                        <option value="BNB">BNB</option>
-                    </select>
-                </div>
-            </div>
-            <div style="padding:0.75rem; font-size:0.8rem; color:var(--text-secondary); background:var(--bg-surface); border-radius:8px; margin-bottom:0.75rem;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                    <span>Exchange Rate</span>
-                    <span id="rate-display" style="color:var(--text-primary);">--</span>
-                </div>
-                <div style="display:flex; justify-content:space-between;">
-                    <span>Network Fee</span>
-                    <span style="color:var(--up-color);">Free ✓</span>
-                </div>
-            </div>
-            <button class="btn-primary" id="confirm-swap">
-                <span id="swap-btn-text">Swap Now</span>
-                <span id="swap-spinner" style="display:none;">⏳ Processing...</span>
-            </button>
-            <div style="margin-top:1.5rem; padding-bottom:2rem;">
-                <h4 style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.75rem; letter-spacing:0.08em; text-transform:uppercase;">Recent Transactions</h4>
-                <div id="tx-history-list">
-                    <p style="color:var(--text-secondary); font-size:0.8rem; text-align:center; padding:1rem;">No transactions yet.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- P2P Post Ad Modal -->
-    <div id="p2p-modal" class="overlay" style="display:none;">
-        <div class="overlay-content" style="max-height:85vh; overflow-y:auto;">
-            <div class="overlay-header">
-                <div class="back-btn" onclick="document.getElementById('p2p-modal').style.display='none'"><i data-lucide="chevron-left"></i></div>
-                <h4 style="margin:0;">Post P2P Ad</h4>
-                <div style="width:32px;"></div>
-            </div>
-            <div style="padding:1.5rem;">
-                <div class="swap-input-group">
-                    <label>I want to:</label>
-                    <div style="display:flex; gap:10px; margin-top:8px;">
-                        <button id="ad-type-buy" onclick="setAdType('BUY')" style="flex:1; padding:10px; border-radius:8px; border:none; background:var(--bg-surface); color:var(--text-secondary); cursor:pointer;">BUY</button>
-                        <button id="ad-type-sell" onclick="setAdType('SELL')" style="flex:1; padding:10px; border-radius:8px; border:none; background:var(--primary); color:#000; font-weight:700; cursor:pointer;">SELL</button>
-                    </div>
-                </div>
-                
-                <div class="swap-input-group" style="margin-top:20px;">
-                    <label>Asset</label>
-                    <select id="ad-asset" style="width:100%; padding:14px; background:var(--bg-main); border:1px solid var(--border-color); color:white; border-radius:12px; margin-top:8px;">
-                        <option value="BTC">Bitcoin (BTC)</option>
-                        <option value="ETH">Ethereum (ETH)</option>
-                        <option value="BNB">Binance Coin (BNB)</option>
-                        <option value="USD">US Dollar (USD)</option>
-                    </select>
-                </div>
-
-                <div class="swap-input-group" style="margin-top:20px;">
-                    <label>Total Amount</label>
-                    <input type="number" id="ad-amount" placeholder="0.00" style="width:100%; padding:14px; background:var(--bg-main); border:1px solid var(--border-color); color:white; border-radius:12px; margin-top:8px;">
-                </div>
-
-                <div class="swap-input-group" style="margin-top:20px;">
-                    <label>Fixed Price (VND)</label>
-                    <input type="number" id="ad-price" placeholder="Enter price per unit" style="width:100%; padding:14px; background:var(--bg-main); border:1px solid var(--border-color); color:white; border-radius:12px; margin-top:8px;">
-                </div>
-
-                <button onclick="submitP2PAd()" style="width:100%; background:var(--primary); color:#000; border:none; padding:1rem; border-radius:12px; font-weight:700; font-size:1rem; margin-top:30px; cursor:pointer;">Post Ad</button>
-            </div>
-        </div>
-    </div>
-
     <div id="toast-container"></div>
-    <script src="js/app.js?v=5"></script>
-    <script>lucide.createIcons();</script>
+    <!-- ===================== AUTH SCREEN ===================== -->
+    <div id="auth-screen" style="position:fixed; inset:0; background:var(--bg-main); z-index:1000; overflow-y:auto;">
+        <div
+            style="min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2rem;">
+
+            <!-- Logo -->
+            <div style="text-align:center; margin-bottom:2rem;">
+                <div
+                    style="width:56px; height:56px; background:var(--primary); border-radius:16px; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem;">
+                    <i data-lucide="zap" style="width:28px; color:#000;"></i>
+                </div>
+                <h1 style="font-size:1.6rem; font-weight:800; letter-spacing:-0.5px;">Binance Pro</h1>
+                <p style="color:var(--text-secondary); font-size:0.85rem; margin-top:4px;">Professional Currency
+                    Exchange</p>
+            </div>
+
+            <!-- Auth Card -->
+            <div
+                style="width:100%; max-width:400px; background:var(--bg-surface); border-radius:16px; padding:2rem; border:1px solid var(--border-color);">
+                <!-- Tabs -->
+                <div
+                    style="display:flex; gap:0; background:var(--bg-main); border-radius:8px; padding:4px; margin-bottom:1.5rem;">
+                    <button id="tab-login" onclick="switchAuthTab('login')"
+                        style="flex:1; padding:0.6rem; border:none; border-radius:6px; font-weight:600; font-size:0.85rem; cursor:pointer; background:var(--primary); color:#000; transition:all 0.2s;">Login</button>
+                    <button id="tab-signup" onclick="switchAuthTab('signup')"
+                        style="flex:1; padding:0.6rem; border:none; border-radius:6px; font-weight:600; font-size:0.85rem; cursor:pointer; background:transparent; color:var(--text-secondary); transition:all 0.2s;">Register</button>
+                </div>
+
+                <!-- Login Form -->
+                <div id="form-login">
+                    <div style="margin-bottom:1rem;">
+                        <label
+                            style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:6px;">Username</label>
+                        <input id="login-username" type="text" placeholder="Enter username"
+                            style="width:100%; background:var(--bg-main); border:1px solid var(--border-color); border-radius:8px; padding:0.75rem 1rem; color:var(--text-primary); font-size:0.9rem; outline:none; box-sizing:border-box;">
+                    </div>
+                    <div style="margin-bottom:1.5rem; position:relative;">
+                        <label
+                            style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:6px;">Password</label>
+                        <input id="login-password" type="password" placeholder="Enter password"
+                            style="width:100%; background:var(--bg-main); border:1px solid var(--border-color); border-radius:8px; padding:0.75rem 1rem; color:var(--text-primary); font-size:0.9rem; outline:none; box-sizing:border-box;">
+                    </div>
+                    <button onclick="performLogin()" id="login-btn"
+                        style="width:100%; background:var(--primary); color:#000; border:none; border-radius:10px; padding:0.9rem; font-weight:700; font-size:1rem; cursor:pointer; transition:opacity 0.2s;">
+                        <span id="login-btn-text">Login</span>
+                    </button>
+                    <p style="text-align:center; margin-top:1rem; font-size:0.8rem; color:var(--text-secondary);">
+                        Don't have an account? <span onclick="switchAuthTab('signup')"
+                            style="color:var(--primary); cursor:pointer; font-weight:600;">Register now</span>
+                    </p>
+                </div>
+
+                <!-- Register Form -->
+                <div id="form-signup" style="display:none;">
+                    <div style="margin-bottom:1rem;">
+                        <label
+                            style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:6px;">Username</label>
+                        <input id="signup-username" type="text" placeholder="Choose a username"
+                            style="width:100%; background:var(--bg-main); border:1px solid var(--border-color); border-radius:8px; padding:0.75rem 1rem; color:var(--text-primary); font-size:0.9rem; outline:none; box-sizing:border-box;">
+                    </div>
+                    <div style="margin-bottom:1rem;">
+                        <label
+                            style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:6px;">Email</label>
+                        <input id="signup-email" type="email" placeholder="Enter your email"
+                            style="width:100%; background:var(--bg-main); border:1px solid var(--border-color); border-radius:8px; padding:0.75rem 1rem; color:var(--text-primary); font-size:0.9rem; outline:none; box-sizing:border-box;">
+                    </div>
+                    <div style="margin-bottom:1.5rem;">
+                        <label
+                            style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:6px;">Password</label>
+                        <input id="signup-password" type="password" placeholder="Create a strong password"
+                            style="width:100%; background:var(--bg-main); border:1px solid var(--border-color); border-radius:8px; padding:0.75rem 1rem; color:var(--text-primary); font-size:0.9rem; outline:none; box-sizing:border-box;">
+                    </div>
+                    <button onclick="performSignup()" id="signup-btn"
+                        style="width:100%; background:var(--primary); color:#000; border:none; border-radius:10px; padding:0.9rem; font-weight:700; font-size:1rem; cursor:pointer; transition:opacity 0.2s;">
+                        <span id="signup-btn-text">Create Account</span>
+                    </button>
+                    <p style="text-align:center; margin-top:1rem; font-size:0.8rem; color:var(--text-secondary);">
+                        Already have an account? <span onclick="switchAuthTab('login')"
+                            style="color:var(--primary); cursor:pointer; font-weight:600;">Login</span>
+                    </p>
+                </div>
+            </div>
+
+            <p style="margin-top:1.5rem; font-size:0.75rem; color:var(--text-secondary); text-align:center;">
+                Protected by JWT Security · Encrypted · 24h Session
+            </p>
+        </div>
+    </div>
+
+    <!-- ===================== MAIN APP ===================== -->
+    <div id="main-app" style="display:none;">
+        <div class="app-wrapper fade-in">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left" style="display:flex; align-items:center; gap:10px;">
+                    <div id="user-avatar"
+                        style="width:32px; height:32px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; font-weight:800; color:#000; font-size:0.8rem; cursor:pointer;"
+                        onclick="openSettings()">?</div>
+                </div>
+                <div class="header-center" style="flex:1; margin:0 15px;">
+                    <div
+                        style="background:var(--bg-surface); padding:6px 12px; border-radius:20px; display:flex; align-items:center; gap:8px; border:1px solid var(--border-color);">
+                        <i data-lucide="search" style="width:16px; color:var(--text-secondary);"></i>
+                        <input id="asset-search" type="text" placeholder="Search coins..."
+                            style="background:transparent; border:none; color:var(--text-primary); font-size:0.85rem; outline:none; width:100%;">
+                    </div>
+                </div>
+                <div class="header-right" style="display:flex; gap:15px; align-items:center;">
+                    <div class="notif-bell" id="bell-trigger">
+                        <i data-lucide="bell"></i>
+                        <div class="notif-dot" id="notif-dot" style="display:none;"></div>
+                    </div>
+                    <div onclick="performLogout()" title="Logout" style="cursor:pointer; color:var(--text-secondary);">
+                        <i data-lucide="log-out" style="width:18px;"></i>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Balance Section -->
+            <section class="balance-section fade-in">
+                <div class="balance-header">
+                    <span>Portfolio Balance</span>
+                    <i data-lucide="eye" style="width:14px;"></i>
+                </div>
+                <div class="main-balance" id="total-balance">$0.00</div>
+                <div class="sub-balance up">
+                    <i data-lucide="trending-up" style="width:14px; vertical-align:middle;"></i>
+                    <span id="balance-change">+0.00%</span>
+                </div>
+            </section>
+
+            <!-- Action Row -->
+            <section class="action-row fade-in" style="margin-bottom: 2rem;">
+                <div class="action-btn" onclick="showToast('Coming Soon', 'Send feature is being developed', 'info')">
+                    <div class="circle"><i data-lucide="arrow-up"></i></div>
+                    <span>Send</span>
+                </div>
+                <div class="action-btn"
+                    onclick="showToast('Coming Soon', 'Receive feature is being developed', 'info')">
+                    <div class="circle"><i data-lucide="arrow-down"></i></div>
+                    <span>Receive</span>
+                </div>
+                <div class="action-btn" id="open-swap" onclick="openSwap()">
+                    <div class="circle"><i data-lucide="refresh-cw"></i></div>
+                    <span>Swap</span>
+                </div>
+                <div class="action-btn"
+                    onclick="showToast('Coming Soon', 'History feature is being developed', 'info')">
+                    <div class="circle"><i data-lucide="history"></i></div>
+                    <span>History</span>
+                </div>
+            </section>
+
+            <!-- Home View -->
+            <div id="home-view" class="view-content active">
+                <div class="asset-tabs fade-in">
+                    <div class="tab">Fiat</div>
+                    <div class="tab active">Crypto</div>
+                    <div class="tab">NFTs</div>
+                </div>
+                <section class="asset-container fade-in" id="asset-list"></section>
+            </div>
+
+            <!-- Market View -->
+            <div id="market-view" class="view-content" style="display:none; padding:0;">
+                <div class="market-header">
+                    <div style="display:flex; justify-content:space-between; align-items:start;">
+                        <div>
+                            <h3 id="market-pair-title" style="margin:0; font-size:1.25rem;">USD / VND</h3>
+                            <p style="color:var(--text-secondary); font-size:0.8rem; margin-top:4px;">Live Trading View
+                            </p>
+                        </div>
+                        <div style="text-align:right;">
+                            <div id="market-pair-price" style="font-size:1.25rem; font-weight:700;">--</div>
+                            <div class="sub-balance up" id="market-pair-change" style="font-size:0.8rem;">+0.00%</div>
+                        </div>
+                    </div>
+                    <div class="chart-controls">
+                        <button class="t-btn active" data-tf="1m">1m</button>
+                        <button class="t-btn" data-tf="5m">5m</button>
+                        <button class="t-btn" data-tf="1h">1h</button>
+                        <button class="t-btn" data-tf="1D">1D</button>
+                        <div style="border-left:1px solid #474D57; margin:0 4px; height:16px;"></div>
+                        <button class="t-btn active" id="toggle-ma">MA</button>
+                        <button class="t-btn active" id="toggle-vol">VOL</button>
+                    </div>
+                </div>
+                <div id="market-chart" style="height:400px; width:100%;"></div>
+            </div>
+
+            <!-- P2P View -->
+            <div id="p2p-view" class="view-content" style="display:none; padding:0;">
+                <div class="market-header" style="padding:1rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                        <h3 style="margin:0;">P2P Trading</h3>
+                        <button onclick="openCreateListing()"
+                            style="background:var(--primary); border:none; padding:6px 12px; border-radius:6px; font-weight:600; font-size:0.85rem; cursor:pointer;">Post
+                            Ad</button>
+                    </div>
+                    <div class="asset-tabs" style="padding:0; margin-bottom:0;">
+                        <div class="tab active" onclick="switchP2PTab('BUY')" id="p2p-buy-tab">Buy</div>
+                        <div class="tab" onclick="switchP2PTab('SELL')" id="p2p-sell-tab">Sell</div>
+                        <div style="flex:1;"></div>
+                        <div
+                            style="background:var(--bg-main); padding:4px 8px; border-radius:8px; display:flex; align-items:center; gap:6px; border:1px solid var(--border-color);">
+                            <i data-lucide="search" style="width:14px; color:var(--text-secondary);"></i>
+                            <input id="p2p-search" type="text" placeholder="Search ads..."
+                                style="background:transparent; border:none; color:var(--text-primary); font-size:0.75rem; outline:none; width:80px;">
+                        </div>
+                    </div>
+                </div>
+                <div id="p2p-ads-container" style="padding:10px;">
+                    <!-- P2P Ads will be injected here -->
+                </div>
+            </div>
+
+            <!-- Mart View -->
+            <div id="discover-view" class="view-content" style="display:none; padding:0;">
+                <!-- Tích hợp giao diện Discovery cũ vào đây -->
+                <iframe src="discovery.html" style="width:100%; height:80vh; border:none;"></iframe>
+            </div>
+
+            <!-- Chat View -->
+            <div id="chat-view" class="view-content" style="display:none; padding:1rem;">
+                <h3 style="margin-bottom:1rem;">Messages</h3>
+                <div style="display:flex; flex-direction:column; gap:15px;">
+                    <div
+                        style="background:var(--bg-surface); padding:1rem; border-radius:12px; display:flex; gap:12px; align-items:center;">
+                        <div
+                            style="width:48px; height:48px; background:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; color:black;">
+                            AD</div>
+                        <div style="flex:1;">
+                            <h4 style="margin:0; font-size:0.9rem;">Admin Support</h4>
+                            <p style="margin:4px 0 0; font-size:0.8rem; color:var(--text-secondary);">How can I help you
+                                with your order?</p>
+                        </div>
+                        <span style="font-size:0.7rem; color:var(--text-secondary);">10:15 AM</span>
+                    </div>
+                    <!-- More chat items can be added here -->
+                </div>
+            </div>
+
+            <!-- Settings / Profile View -->
+            <div id="settings-view" class="view-content" style="display:none; padding:1rem;">
+                <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
+                    <div id="settings-avatar"
+                        style="width:56px; height:56px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; font-weight:800; color:#000; font-size:1.2rem;">
+                        ?</div>
+                    <div>
+                        <h3 id="settings-username" style="margin:0;">Account</h3>
+                        <p id="settings-email" style="color:var(--text-secondary); font-size:0.8rem; margin:4px 0 0;">--
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Rewards Center -->
+                <div
+                    style="background:var(--bg-surface); border-radius:12px; padding:1rem; margin-bottom:1rem; border:1px solid rgba(243, 186, 47, 0.2);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <i data-lucide="gift" style="color:var(--primary); width:20px;"></i>
+                            <p style="font-weight:700; margin:0;">Rewards Center</p>
+                        </div>
+                        <span id="reward-points"
+                            style="font-size:0.75rem; background:rgba(243, 186, 47, 0.1); color:var(--primary); padding:2px 8px; border-radius:10px; font-weight:600;">Earn
+                            USD</span>
+                    </div>
+                    <div id="quest-list" style="display:flex; flex-direction:column; gap:12px;">
+                        <!-- Quests will be injected here -->
+                        <div class="skeleton-text" style="width:100%;"></div>
+                    </div>
+                </div>
+
+                <!-- 2FA Section -->
+                <div style="background:var(--bg-surface); border-radius:12px; padding:1rem; margin-bottom:1rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <p style="font-weight:600; margin:0;">Two-Factor Auth (2FA)</p>
+                            <p style="color:var(--text-secondary); font-size:0.8rem; margin:4px 0 0;" id="twofa-status">
+                                Status: Disabled</p>
+                        </div>
+                        <button id="toggle-2fa-btn" onclick="toggle2FA()"
+                            style="background:var(--primary); color:#000; border:none; padding:0.5rem 1rem; border-radius:8px; font-weight:600; cursor:pointer; font-size:0.85rem;">Enable</button>
+                    </div>
+                    <!-- QR Code display area -->
+                    <div id="twofa-qr-area"
+                        style="display:none; margin-top:1rem; text-align:center; padding:1rem; background:var(--bg-main); border-radius:8px;">
+                        <p style="font-size:0.85rem; margin-bottom:0.5rem; color:var(--text-secondary);">Scan with
+                            Google Authenticator</p>
+                        <div id="qr-code-display"
+                            style="width:160px; height:160px; background:white; margin:0.5rem auto; border-radius:8px; display:flex; align-items:center; justify-content:center; padding:8px;">
+                            <img id="qr-img" src="" alt="QR Code" style="width:100%; height:100%; object-fit:contain;">
+                        </div>
+                        <p style="font-size:0.75rem; color:var(--text-secondary); margin-top:0.5rem;">Or enter secret
+                            key manually:</p>
+                        <p id="totp-secret"
+                            style="font-family:monospace; font-size:0.8rem; color:var(--primary); word-break:break-all; margin-top:4px;">
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Security Info -->
+                <div style="background:var(--bg-surface); border-radius:12px; padding:1rem; margin-bottom:1rem;">
+                    <p style="font-weight:600; margin:0 0 0.75rem;">Security Overview</p>
+                    <div
+                        style="display:flex; justify-content:space-between; padding:0.5rem 0; border-bottom:1px solid var(--border-color);">
+                        <span style="font-size:0.85rem; color:var(--text-secondary);">Password</span>
+                        <span style="font-size:0.85rem; color:var(--up-color);">✓ Set</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:0.5rem 0;">
+                        <span style="font-size:0.85rem; color:var(--text-secondary);">JWT Session</span>
+                        <span style="font-size:0.85rem; color:var(--up-color);">✓ Active (24h)</span>
+                    </div>
+                </div>
+
+                <!-- System Status -->
+                <div style="background:var(--bg-surface); border-radius:12px; padding:1rem; margin-bottom:1.5rem;">
+                    <p style="font-weight:600; margin:0 0 0.75rem;">System Health</p>
+                    <div id="service-status-list" style="display:flex; flex-direction:column; gap:8px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:0.8rem; color:var(--text-secondary);">API Gateway</span>
+                            <span style="width:8px; height:8px; border-radius:50%; background:var(--up-color);"></span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:0.8rem; color:var(--text-secondary);">User Service</span>
+                            <span style="width:8px; height:8px; border-radius:50%; background:var(--up-color);"></span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:0.8rem; color:var(--text-secondary);">Exchange Engine</span>
+                            <span style="width:8px; height:8px; border-radius:50%; background:var(--up-color);"></span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:0.8rem; color:var(--text-secondary);">Kafka Broker</span>
+                            <span style="width:8px; height:8px; border-radius:50%; background:var(--up-color);"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="performLogout()"
+                    style="width:100%; background:#2B3139; color:var(--down-color); border:none; padding:0.9rem; border-radius:10px; font-weight:700; font-size:0.95rem; cursor:pointer;">
+                    <i data-lucide="log-out" style="width:16px; vertical-align:middle; margin-right:6px;"></i>
+                    Sign Out
+                </button>
+            </div>
+
+            <!-- Bottom Nav -->
+            <nav class="bottom-nav">
+                <div class="nav-item active" id="nav-home" onclick="switchView('home')">
+                    <i data-lucide="home"></i>
+                    <span>Home</span>
+                </div>
+                <div class="nav-item" id="nav-market" onclick="switchView('market')">
+                    <i data-lucide="bar-chart-2"></i>
+                    <span>Markets</span>
+                </div>
+                <div class="nav-item" id="nav-p2p" onclick="switchView('p2p')">
+                    <i data-lucide="users"></i>
+                    <span>P2P</span>
+                </div>
+                <div class="nav-item" id="nav-discover" onclick="switchView('discover')">
+                    <i data-lucide="shopping-bag"></i>
+                    <span>Mart</span>
+                </div>
+                <div class="nav-item" id="nav-chat" onclick="switchView('chat')">
+                    <i data-lucide="message-square"></i>
+                    <span>Chat</span>
+                </div>
+                <div class="nav-item" id="nav-settings" onclick="switchView('settings')">
+                    <i data-lucide="user"></i>
+                    <span>Profile</span>
+                </div>
+            </nav>
+
+            <!-- Swap Modal - Pro Version -->
+            <div id="swap-overlay"
+                style="display:none; position:fixed; inset:0; background:var(--bg-main); z-index:200; overflow-y:auto;">
+                <header class="header" style="position:sticky; top:0; z-index:10;">
+                    <div id="close-swap" onclick="document.getElementById('swap-overlay').style.display='none'"
+                        style="cursor:pointer; display:flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:50%; transition:background 0.2s;">
+                        <i data-lucide="arrow-left"></i>
+                    </div>
+                    <span style="font-weight:700; font-size:1.1rem;">Swap</span>
+                    <i data-lucide="info"></i>
+                </header>
+                <div class="swap-modal">
+                    <div class="swap-box">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+                            <p class="label">Spend</p>
+                            <p class="label" id="from-balance-label" style="color:var(--text-secondary);">Balance: --
+                            </p>
+                        </div>
+                        <div class="swap-input-grp">
+                            <input type="number" id="swap-input" placeholder="0" min="0" oninput="calculateSwap()">
+                            <select id="from-select" onchange="calculateSwap()"
+                                style="background:#2B3139; color:white; border:none; padding:6px 10px; border-radius:8px; font-weight:700; font-size:0.9rem; cursor:pointer; outline:none;">
+                                <option value="USD">USD</option>
+                                <option value="VND">VND</option>
+                                <option value="BTC">BTC</option>
+                                <option value="ETH">ETH</option>
+                                <option value="BNB">BNB</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="text-align:center; margin:4px auto; position:relative; z-index:2;">
+                        <div class="circle" id="flip-btn"
+                            style="width:36px; height:36px; background:var(--bg-surface-hover); margin:0 auto; border:2px solid var(--bg-main); cursor:pointer;">
+                            <i data-lucide="arrow-down-up" style="width:16px; color:var(--primary);"></i>
+                        </div>
+                    </div>
+                    <div class="swap-box">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+                            <p class="label">Receive (estimated)</p>
+                        </div>
+                        <div class="swap-input-grp">
+                            <input type="number" id="swap-output" placeholder="0" readonly
+                                style="color:var(--up-color);">
+                            <select id="to-select" onchange="calculateSwap()"
+                                style="background:#2B3139; color:white; border:none; padding:6px 10px; border-radius:8px; font-weight:700; font-size:0.9rem; cursor:pointer; outline:none;">
+                                <option value="VND" selected>VND</option>
+                                <option value="USD">USD</option>
+                                <option value="BTC">BTC</option>
+                                <option value="ETH">ETH</option>
+                                <option value="BNB">BNB</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div
+                        style="padding:0.75rem; font-size:0.8rem; color:var(--text-secondary); background:var(--bg-surface); border-radius:8px; margin-bottom:0.75rem;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                            <span>Exchange Rate</span>
+                            <span id="rate-display" style="color:var(--text-primary);">--</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span>Network Fee</span>
+                            <span style="color:var(--up-color);">Free ✓</span>
+                        </div>
+                    </div>
+
+                    <button class="btn-primary" id="confirm-swap" onclick="executeSwap()">
+                        <span id="swap-btn-text">Swap Now</span>
+                        <span id="swap-spinner" style="display:none;">⏳ Processing...</span>
+                    </button>
+                    <div style="margin-top:1.5rem; padding-bottom:2rem;">
+                        <h4
+                            style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.75rem; letter-spacing:0.08em; text-transform:uppercase;">
+                            Recent Transactions</h4>
+                        <div id="tx-history-list">
+                            <p style="color:var(--text-secondary); font-size:0.8rem; text-align:center; padding:1rem;">
+                                No transactions yet.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- P2P Post Ad Modal -->
+            <div id="p2p-modal" class="overlay" style="display:none;">
+                <div class="overlay-content" style="max-height:85vh; overflow-y:auto;">
+                    <div class="overlay-header">
+                        <div class="back-btn" onclick="document.getElementById('p2p-modal').style.display='none'"><i
+                                data-lucide="chevron-left"></i></div>
+                        <h4 style="margin:0;">Post P2P Ad</h4>
+                        <div style="width:32px;"></div>
+                    </div>
+                    <div style="padding:1.5rem;">
+                        <div class="swap-input-group">
+                            <label>I want to:</label>
+                            <div style="display:flex; gap:10px; margin-top:8px;">
+                                <button id="ad-type-buy" onclick="setAdType('BUY')"
+                                    style="flex:1; padding:10px; border-radius:8px; border:none; background:var(--bg-surface); color:var(--text-secondary); cursor:pointer;">BUY</button>
+                                <button id="ad-type-sell" onclick="setAdType('SELL')"
+                                    style="flex:1; padding:10px; border-radius:8px; border:none; background:var(--primary); color:#000; font-weight:700; cursor:pointer;">SELL</button>
+                            </div>
+                        </div>
+
+                        <div class="swap-input-group" style="margin-top:20px;">
+                            <label>Asset</label>
+                            <select id="ad-asset"
+                                style="width:100%; padding:14px; background:var(--bg-main); border:1px solid var(--border-color); color:white; border-radius:12px; margin-top:8px;">
+                                <option value="BTC">Bitcoin (BTC)</option>
+                                <option value="ETH">Ethereum (ETH)</option>
+                                <option value="BNB">Binance Coin (BNB)</option>
+                                <option value="USD">US Dollar (USD)</option>
+                            </select>
+                        </div>
+
+                        <div class="swap-input-group" style="margin-top:20px;">
+                            <label>Total Amount</label>
+                            <input type="number" id="ad-amount" placeholder="0.00"
+                                style="width:100%; padding:14px; background:var(--bg-main); border:1px solid var(--border-color); color:white; border-radius:12px; margin-top:8px;">
+                        </div>
+
+                        <div class="swap-input-group" style="margin-top:20px;">
+                            <label>Fixed Price (VND)</label>
+                            <input type="number" id="ad-price" placeholder="Enter price per unit"
+                                style="width:100%; padding:14px; background:var(--bg-main); border:1px solid var(--border-color); color:white; border-radius:12px; margin-top:8px;">
+                        </div>
+
+                        <button onclick="submitP2PAd()"
+                            style="width:100%; background:var(--primary); color:#000; border:none; padding:1rem; border-radius:12px; font-weight:700; font-size:1rem; margin-top:30px; cursor:pointer;">Post
+                            Ad</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="toast-container"></div>
+            <script type="module" src="js/main.js?v=35"></script>
+            <script>window.addEventListener('DOMContentLoaded', () => lucide.createIcons());</script>
 </body>
+
 </html>

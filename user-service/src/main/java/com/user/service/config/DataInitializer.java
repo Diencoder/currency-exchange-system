@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import java.math.BigDecimal;
 
 @Configuration
+@lombok.extern.slf4j.Slf4j
 public class DataInitializer {
 
     @Bean
@@ -31,7 +32,7 @@ public class DataInitializer {
                         .rewardCurrency("USD")
                         .build());
                 
-                System.out.println(">>> Quests initialized successfully!");
+                log.info(">>> Quests initialized successfully!");
             }
         };
     }

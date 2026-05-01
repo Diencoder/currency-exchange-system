@@ -10,14 +10,11 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "transactions")
 @Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Transaction {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Transaction extends BaseEntity {
 
     @Column(name = "user_id", nullable = false)
     private Long userId;
@@ -48,6 +45,19 @@ public class Transaction {
     private String referenceId;
     private String description;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    /**
+     * Business logic: Encapsulation
+     * Only allow cancellation if the transaction is not in a final state.
+     */
+    public boolean canBeCancelled() {
+        return status != TransactionStatus.COMPLETED && 
+               status != TransactionStatus.FAILED && 
+               status != TransactionStatus.CANCELLED;
+    }
+
+    public void markAsFailed(String reason) {
+        this.status = TransactionStatus.FAILED;
+        this.description = (this.description != null ? this.description : "") + " | Error: " + reason;
+        this.setUpdatedAt(LocalDateTime.now());
+    }
 }

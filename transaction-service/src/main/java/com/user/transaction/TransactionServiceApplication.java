@@ -8,6 +8,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 @EnableDiscoveryClient
 public class TransactionServiceApplication {
     public static void main(String[] args) {
+        // Final test: Cho xac nhan tu nguoi dung...
         SpringApplication.run(TransactionServiceApplication.class, args);
     }
 }

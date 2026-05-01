@@ -1,51 +1,63 @@
 package com.user.p2p.service;
 
 import com.user.common.dto.P2PEvent;
+import com.user.p2p.client.UserClient;
+import com.user.p2p.dto.EscrowTransactionDTO;
+import com.user.p2p.dto.P2PListingDTO;
+import com.user.p2p.dto.P2PListingRequest;
 import com.user.p2p.entity.EscrowTransaction;
 import com.user.p2p.entity.P2PListing;
 import com.user.p2p.repository.EscrowTransactionRepository;
 import com.user.p2p.repository.P2PListingRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class P2PService {
 
-    @Autowired
-    private P2PListingRepository listingRepository;
-
-    @Autowired
-    private EscrowTransactionRepository escrowRepository;
-
-    @Autowired
-    private KafkaTemplate<String, Object> kafkaTemplate;
+    private final P2PListingRepository listingRepository;
+    private final EscrowTransactionRepository escrowRepository;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final UserClient userClient;
 
     @Value("${app.kafka.p2p-topic}")
     private String p2pTopic;
 
-    public List<P2PListing> getActiveListings() {
-        return listingRepository.findByStatus(P2PListing.ListingStatus.ACTIVE);
+    public List<P2PListingDTO> getActiveListings() {
+        return listingRepository.findByStatus(P2PListing.ListingStatus.ACTIVE).stream()
+                .map(this::convertToDTO)
+                .collect(java.util.stream.Collectors.toList());
     }
 
-    public P2PListing createListing(P2PListing listing) {
-        listing.setRemainingAmount(listing.getTotalAmount());
-        listing.setCreatedAt(LocalDateTime.now());
-        listing.setStatus(P2PListing.ListingStatus.ACTIVE);
-        return listingRepository.save(listing);
+    public P2PListingDTO createListing(P2PListingRequest request) {
+        P2PListing listing = P2PListing.builder()
+                .sellerId(request.getSellerId())
+                .fromCurrency(request.getFromCurrency())
+                .toCurrency(request.getToCurrency())
+                .totalAmount(request.getTotalAmount())
+                .remainingAmount(request.getTotalAmount())
+                .minLimit(request.getMinLimit())
+                .rateType(P2PListing.RateType.valueOf(request.getRateType()))
+                .fixedRate(request.getFixedRate())
+                .marginPercent(request.getMarginPercent())
+                .status(P2PListing.ListingStatus.ACTIVE)
+                .build();
+        
+        return convertToDTO(listingRepository.save(listing));
     }
 
     @Transactional
-    public EscrowTransaction initiateEscrow(Long listingId, Long buyerId, BigDecimal amount, String idempotencyKey) {
+    public EscrowTransactionDTO initiateEscrow(Long listingId, Long buyerId, BigDecimal amount, String idempotencyKey) {
         if (idempotencyKey != null) {
             var existing = escrowRepository.findByIdempotencyKey(idempotencyKey);
-            if (existing.isPresent()) return existing.get();
+            if (existing.isPresent()) return convertToEscrowDTO(existing.get());
         }
 
         P2PListing listing = listingRepository.findById(listingId)
@@ -66,15 +78,13 @@ public class P2PService {
                 .amount(amount)
                 .idempotencyKey(idempotencyKey)
                 .status(EscrowTransaction.EscrowStatus.HOLDING)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
                 .build();
 
-        return escrowRepository.save(escrow);
+        return convertToEscrowDTO(escrowRepository.save(escrow));
     }
 
     @Transactional
-    public EscrowTransaction releaseEscrow(Long escrowId) {
+    public EscrowTransactionDTO releaseEscrow(Long escrowId) {
         EscrowTransaction escrow = escrowRepository.findById(escrowId)
                 .orElseThrow(() -> new RuntimeException("Escrow not found"));
 
@@ -83,7 +93,6 @@ public class P2PService {
         }
 
         escrow.setStatus(EscrowTransaction.EscrowStatus.RELEASED);
-        escrow.setUpdatedAt(LocalDateTime.now());
         
         P2PListing listing = listingRepository.findById(escrow.getListingId())
                 .orElseThrow(() -> new RuntimeException("Listing not found"));
@@ -100,6 +109,46 @@ public class P2PService {
 
         kafkaTemplate.send(p2pTopic, event);
         
-        return escrowRepository.save(escrow);
+        return convertToEscrowDTO(escrowRepository.save(escrow));
+    }
+
+    private P2PListingDTO convertToDTO(P2PListing listing) {
+        P2PListingDTO dto = new P2PListingDTO();
+        dto.setId(listing.getId());
+        dto.setSellerId(listing.getSellerId());
+        
+        try {
+            var user = userClient.getUserById(listing.getSellerId());
+            dto.setUsername(user != null ? user.getUsername() : "Unknown");
+        } catch (Exception e) {
+            dto.setUsername("Unknown");
+        }
+
+        dto.setFromCurrency(listing.getFromCurrency());
+        dto.setToCurrency(listing.getToCurrency());
+        dto.setTotalAmount(listing.getTotalAmount());
+        dto.setRemainingAmount(listing.getRemainingAmount());
+        dto.setMinLimit(listing.getMinLimit());
+        dto.setRateType(listing.getRateType().toString());
+        dto.setFixedRate(listing.getFixedRate());
+        dto.setMarginPercent(listing.getMarginPercent());
+        dto.setStatus(listing.getStatus().toString());
+        dto.setCreatedAt(listing.getCreatedAt());
+        return dto;
+    }
+
+    private EscrowTransactionDTO convertToEscrowDTO(EscrowTransaction escrow) {
+        EscrowTransactionDTO dto = new EscrowTransactionDTO();
+        dto.setId(escrow.getId());
+        dto.setListingId(escrow.getListingId());
+        dto.setBuyerId(escrow.getBuyerId());
+        dto.setSellerId(escrow.getSellerId());
+        dto.setAmount(escrow.getAmount());
+        dto.setStatus(escrow.getStatus().toString());
+        dto.setBuyerConfirmed(escrow.isBuyerConfirmed());
+        dto.setSellerConfirmed(escrow.isSellerConfirmed());
+        dto.setCreatedAt(escrow.getCreatedAt());
+        dto.setUpdatedAt(escrow.getUpdatedAt());
+        return dto;
     }
 }

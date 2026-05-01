@@ -1,13 +1,15 @@
 package com.user.exchange.service;
 
+import com.user.exchange.dto.CurrencyRateDTO;
 import com.user.exchange.dto.CurrencyTrend;
+import com.user.exchange.dto.RateOHLCDTO;
 import com.user.exchange.entity.CurrencyRate;
 import com.user.exchange.entity.RateHistory;
 import com.user.exchange.entity.RateOHLC;
 import com.user.exchange.repository.CurrencyRateRepository;
 import com.user.exchange.repository.RateHistoryRepository;
 import com.user.exchange.repository.RateOHLCRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -22,28 +24,26 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class ExchangeService {
 
-    @Autowired
-    private CurrencyRateRepository rateRepository;
-
-    @Autowired
-    private RateOHLCRepository ohlcRepository;
-
-    @Autowired
-    private RateHistoryRepository historyRepository;
-
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    private final CurrencyRateRepository rateRepository;
+    private final RateOHLCRepository ohlcRepository;
+    private final RateHistoryRepository historyRepository;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     private static final String REDIS_RATE_PREFIX = "rate:";
 
-    public List<CurrencyRate> getAllRates() {
-        return rateRepository.findAll();
+    public List<CurrencyRateDTO> getAllRates() {
+        return rateRepository.findAll().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
-    public List<RateOHLC> getOHLCData(String code) {
-        return ohlcRepository.findTop100ByCurrencyPairOrderByTimestampDesc(code.toUpperCase());
+    public List<RateOHLCDTO> getOHLCData(String code) {
+        return ohlcRepository.findTop100ByCurrencyPairOrderByTimestampDesc(code.toUpperCase()).stream()
+                .map(this::convertToOHLCDTO)
+                .collect(Collectors.toList());
     }
 
 
@@ -84,17 +84,38 @@ public class ExchangeService {
                 .collect(Collectors.toList());
     }
 
-    public Optional<CurrencyRate> getRateByCode(String code) {
+    public Optional<CurrencyRateDTO> getRateByCode(String code) {
         String cacheKey = REDIS_RATE_PREFIX + code;
         
         CurrencyRate cachedRate = (CurrencyRate) redisTemplate.opsForValue().get(cacheKey);
         if (cachedRate != null) {
-            return Optional.of(cachedRate);
+            return Optional.of(convertToDTO(cachedRate));
         }
 
         Optional<CurrencyRate> rateOpt = rateRepository.findByCode(code);
         rateOpt.ifPresent(rate -> redisTemplate.opsForValue().set(cacheKey, rate, Duration.ofMinutes(1)));
         
-        return rateOpt;
+        return rateOpt.map(this::convertToDTO);
+    }
+
+    private CurrencyRateDTO convertToDTO(CurrencyRate rate) {
+        return CurrencyRateDTO.builder()
+                .id(rate.getId())
+                .currencyCode(rate.getCode())
+                .rate(rate.getRateToBase())
+                .updatedAt(rate.getUpdatedAt())
+                .build();
+    }
+
+    private RateOHLCDTO convertToOHLCDTO(RateOHLC ohlc) {
+        return RateOHLCDTO.builder()
+                .id(ohlc.getId())
+                .currencyPair(ohlc.getCurrencyPair())
+                .open(ohlc.getOpen())
+                .high(ohlc.getHigh())
+                .low(ohlc.getLow())
+                .close(ohlc.getClose())
+                .timestamp(ohlc.getTimestamp())
+                .build();
     }
 }

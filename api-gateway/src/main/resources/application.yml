@@ -8,27 +8,59 @@ spring:
     gateway:
       discovery:
         locator:
-          enabled: true
-          lower-case-service-id: true
+          enabled: false
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
       routes:
         - id: user-service
           uri: lb://user-service
           predicates:
             - Path=/api/users/**
+          filters:
+            - AuthenticationFilter
         - id: exchange-service
           uri: lb://exchange-service
           predicates:
             - Path=/api/exchange/**
+          filters:
+            - AuthenticationFilter
         - id: transaction-service
           uri: lb://transaction-service
           predicates:
             - Path=/api/transactions/**
+          filters:
+            - AuthenticationFilter
         - id: p2p-service
           uri: lb://p2p-service
           predicates:
             - Path=/api/p2p/**
+          filters:
+            - AuthenticationFilter
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/notifications/**
+          filters:
+            - AuthenticationFilter
 
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
+
+springdoc:
+  swagger-ui:
+    urls:
+      - name: User Service
+        url: /api/users/v3/api-docs
+      - name: Exchange Service
+        url: /api/exchange/v3/api-docs
+      - name: Transaction Service
+        url: /api/transactions/v3/api-docs
+      - name: P2P Service
+        url: /api/p2p/v3/api-docs

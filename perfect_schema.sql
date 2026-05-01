@@ -195,11 +195,69 @@ CREATE TABLE IF NOT EXISTS disputes (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- -----------------------------------------------------------------------------
+-- 5. MARKETPLACE & DISCOVERY SERVICE DATABASE
+-- -----------------------------------------------------------------------------
+CREATE DATABASE IF NOT EXISTS marketplace_db;
+USE marketplace_db;
+
+-- Digital product listings
+CREATE TABLE IF NOT EXISTS marketplace_products (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    price DECIMAL(20, 8) NOT NULL,
+    currency VARCHAR(10) DEFAULT 'VND',
+    category VARCHAR(50), -- STREAMING, DESIGN, GAMING, etc.
+    seller_id BIGINT NOT NULL,
+    status VARCHAR(20) DEFAULT 'AVAILABLE', -- AVAILABLE, SOLD, DELETED
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_seller (seller_id),
+    INDEX idx_category (category)
+);
+
+-- Marketplace Orders with Escrow tracking
+CREATE TABLE IF NOT EXISTS marketplace_orders (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    product_id BIGINT NOT NULL,
+    buyer_id BIGINT NOT NULL,
+    seller_id BIGINT NOT NULL,
+    amount DECIMAL(20, 8) NOT NULL,
+    currency VARCHAR(10),
+    status VARCHAR(50) DEFAULT 'PENDING_PAYMENT', 
+    -- Statuses: PENDING_PAYMENT, PAID_LOCKED, COMPLETED, DISPUTED, CANCELLED
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES marketplace_products(id),
+    INDEX idx_buyer (buyer_id),
+    INDEX idx_seller_order (seller_id)
+);
+
+-- Marketplace Disputes (Reporting system)
+CREATE TABLE IF NOT EXISTS marketplace_disputes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    order_id BIGINT NOT NULL,
+    reporter_id BIGINT NOT NULL,
+    reason TEXT NOT NULL,
+    evidence_url VARCHAR(512),
+    status VARCHAR(20) DEFAULT 'OPEN', -- OPEN, INVESTIGATING, RESOLVED, CLOSED
+    admin_note TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_order_dispute FOREIGN KEY (order_id) REFERENCES marketplace_orders(id)
+);
+
 -- Init default data
 USE exchange_db;
-INSERT INTO currencies (code, name, symbol) VALUES 
+INSERT IGNORE INTO currencies (code, name, symbol) VALUES 
 ('USD', 'US Dollar', '$'),
 ('VND', 'Vietnamese Dong', '₫'),
 ('EUR', 'Euro', '€'),
 ('GBP', 'British Pound', '£'),
 ('JPY', 'Japanese Yen', '¥');
+
+-- Init sample marketplace data
+USE marketplace_db;
+INSERT IGNORE INTO marketplace_products (name, description, price, currency, category, seller_id, status)
+VALUES ('Canva Pro 1 Year', 'Tài khoản chính chủ, bảo hành 12 tháng', 250000, 'VND', 'DESIGN', 1, 'AVAILABLE');

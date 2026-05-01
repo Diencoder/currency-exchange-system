@@ -14,7 +14,8 @@ public class TransactionEvent {
     private String type; // e.g., EXCHANGE, TRANSFER, P2P
     private String fromCurrency;
     private String toCurrency;
-    private BigDecimal amount;
+    private BigDecimal amountIn;
+    private BigDecimal amountOut;
     private BigDecimal rate;
     private String status;
     private String idempotencyKey;

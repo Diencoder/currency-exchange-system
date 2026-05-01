@@ -3,18 +3,15 @@ package com.user.p2p.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "p2p_listings")
 @Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class P2PListing {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class P2PListing extends BaseEntity {
 
     @Column(nullable = false)
     private Long sellerId;
@@ -42,8 +39,6 @@ public class P2PListing {
 
     @Enumerated(EnumType.STRING)
     private ListingStatus status = ListingStatus.ACTIVE;
-
-    private LocalDateTime createdAt = LocalDateTime.now();
 
     public enum RateType { FIXED, FLOATING }
     public enum ListingStatus { ACTIVE, PAUSED, COMPLETED, CANCELLED }

@@ -2,32 +2,34 @@ package com.user.exchange.scheduler;
 
 import com.user.exchange.entity.CurrencyRate;
 import com.user.exchange.entity.RateHistory;
+import com.user.exchange.entity.RateOHLC;
 import com.user.exchange.repository.CurrencyRateRepository;
+import com.user.exchange.repository.RateHistoryRepository;
+import com.user.exchange.repository.RateOHLCRepository;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 @Component
+@RequiredArgsConstructor
 public class RateScheduler {
     private static final Logger logger = LoggerFactory.getLogger(RateScheduler.class);
     private final Random random = new Random();
 
-    @Autowired
-    private CurrencyRateRepository rateRepository;
-
-    @Autowired
-    private com.user.exchange.repository.RateHistoryRepository historyRepository;
+    private final CurrencyRateRepository rateRepository;
+    private final RateHistoryRepository historyRepository;
+    private final RateOHLCRepository ohlcRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @EventListener(ApplicationReadyEvent.class)
     public void initRates() {
@@ -47,7 +49,6 @@ public class RateScheduler {
                         .code(code)
                         .name(getNameByCode(code))
                         .rateToBase(rate)
-                        .updatedAt(LocalDateTime.now())
                         .build();
                 rateRepository.save(currencyRate);
             });
@@ -55,11 +56,9 @@ public class RateScheduler {
         }
     }
 
-    @Autowired
-    private com.user.exchange.repository.RateOHLCRepository ohlcRepository;
-
     @Scheduled(fixedRate = 10000) // Every 10 seconds
     public void updateRates() {
+        List<Map<String, Object>> updates = new ArrayList<>();
         rateRepository.findAll().forEach(rate -> {
             if ("USD".equals(rate.getCode())) return; // USD is base
 
@@ -70,7 +69,7 @@ public class RateScheduler {
                     .setScale(6, RoundingMode.HALF_UP);
 
             rate.setRateToBase(newRate);
-            rate.setUpdatedAt(LocalDateTime.now());
+            // updatedAt is handled by @PreUpdate in BaseEntity
             rateRepository.save(rate);
 
             String pair = "USD/" + rate.getCode();
@@ -84,7 +83,7 @@ public class RateScheduler {
                     .build());
 
             // Tạo nến OHLC (Dữ liệu nến 10 giây)
-            ohlcRepository.save(com.user.exchange.entity.RateOHLC.builder()
+            RateOHLC ohlc = RateOHLC.builder()
                     .currencyPair(pair)
                     .timeInterval("10s")
                     .open(oldRate)
@@ -92,9 +91,21 @@ public class RateScheduler {
                     .high(oldRate.max(newRate).multiply(BigDecimal.valueOf(1.001))) // Mock high/low for visual
                     .low(oldRate.min(newRate).multiply(BigDecimal.valueOf(0.999)))
                     .timestamp(now)
-                    .build());
+                    .build();
+            ohlcRepository.save(ohlc);
+
+            // Thu thập dữ liệu để push qua WebSocket
+            Map<String, Object> update = new HashMap<>();
+            update.put("code", rate.getCode());
+            update.put("rate", newRate);
+            update.put("pair", pair);
+            update.put("ohlc", ohlc);
+            updates.add(update);
         });
-        logger.info("Updated exchange rates and saved to OHLC/History.");
+        
+        // Push toàn bộ cập nhật xuống client
+        messagingTemplate.convertAndSend("/topic/rates", updates);
+        logger.info("Updated exchange rates and pushed to /topic/rates.");
     }
 
     private String getNameByCode(String code) {
