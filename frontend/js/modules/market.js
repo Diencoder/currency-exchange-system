@@ -72,10 +72,24 @@ export class MarketManager {
         // Render asset list on Home view
         const container = document.getElementById('asset-list');
         if (container && Object.keys(this.currentRates).length > 0) {
-            container.innerHTML = Object.entries(this.currentRates).map(([code, rate]) => {
+            // Sort to show balances first, then others
+            const sortedCodes = Object.keys(this.currentRates).sort((a, b) => {
+                const balA = window.wallet ? window.wallet.getBalance(a) : 0;
+                const balB = window.wallet ? window.wallet.getBalance(b) : 0;
+                if (balA > 0 && balB === 0) return -1;
+                if (balB > 0 && balA === 0) return 1;
+                return a.localeCompare(b);
+            });
+
+            container.innerHTML = sortedCodes.map(code => {
+                const rate = this.currentRates[code];
                 const prevRate = this.previousRates[code] || rate;
                 const change = rate >= prevRate ? '+0.00%' : '-0.00%';
                 const changeClass = rate >= prevRate ? 'up' : 'down';
+                
+                // Get user's balance
+                const balance = window.wallet ? window.wallet.getBalance(code) : 0;
+                const usdValue = balance * rate;
                 
                 // Determine icon class based on coin code
                 let iconClass = 'icon-default';
@@ -90,12 +104,12 @@ export class MarketManager {
                             <div class="asset-icon ${iconClass}">${code.charAt(0)}</div>
                             <div class="asset-details">
                                 <p class="name">${code}</p>
-                                <p class="sub">Market Asset</p>
+                                <p class="sub">$${rate.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 6})}</p>
                             </div>
                         </div>
-                        <div class="asset-values">
-                            <p class="price">${rate.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
-                            <p class="change ${changeClass}">${change}</p>
+                        <div class="asset-values" style="text-align:right;">
+                            <p class="price">${balance > 0 ? balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 6}) : '0.00'} ${code}</p>
+                            <p class="change ${changeClass}" style="font-size:0.8rem;">$${usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                         </div>
                     </div>
                 `;

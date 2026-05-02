@@ -25,14 +25,25 @@ public class EscrowTransaction extends BaseEntity {
     @Column(nullable = false, precision = 20, scale = 8)
     private BigDecimal amount;
 
+    @Column(nullable = false, precision = 20, scale = 8)
+    private BigDecimal totalPrice;
+
+    @Column(nullable = false)
+    private String fromCurrency;
+
+    @Column(nullable = false)
+    private String toCurrency;
+
     @Column(unique = true)
     private String idempotencyKey;
 
     @Enumerated(EnumType.STRING)
-    private EscrowStatus status = EscrowStatus.HOLDING;
+    private EscrowStatus status = EscrowStatus.PENDING;
 
     private boolean buyerConfirmed = false;
     private boolean sellerConfirmed = false;
 
-    public enum EscrowStatus { HOLDING, RELEASED, DISPUTED, CANCELLED, REFUNDED }
+    private String paymentProof; // URL to screenshot if needed
+
+    public enum EscrowStatus { PENDING, PAID, RELEASED, DISPUTED, CANCELLED, REFUNDED }
 }

@@ -1,14 +1,14 @@
 /**
  * Main Application Entry Point
  */
-import { auth } from './modules/auth.js';
-import { wallet } from './modules/wallet.js';
-import { market } from './modules/market.js';
-import { p2p } from './modules/p2p.js';
-import { chat } from './modules/chat.js';
-import { calculateSwap, executeSwap } from './modules/swap.js';
-import { switchView, showToast } from './modules/ui.js';
-import { apiFetch } from './modules/api.js';
+import { auth } from './modules/auth.js?v=2';
+import { wallet } from './modules/wallet.js?v=2';
+import { market } from './modules/market.js?v=2';
+import { p2p } from './modules/p2p.js?v=2';
+import { chat } from './modules/chat.js?v=2';
+import { calculateSwap, executeSwap } from './modules/swap.js?v=2';
+import { switchView, showToast } from './modules/ui.js?v=2';
+import { apiFetch } from './modules/api.js?v=2';
 
 // ===================== GLOBAL EXPOSE (Singleton Pattern) =====================
 window.wallet = wallet;
@@ -16,6 +16,7 @@ window.market = market;
 window.calculateSwap = calculateSwap;
 window.executeSwap = executeSwap;
 window.showToast = showToast;
+window.p2p = p2p;
 
 window.switchView = (viewId) => {
     switchView(viewId);
@@ -97,7 +98,22 @@ window.openSettings = () => window.switchView('settings');
 // ===================== P2P FUNCTIONS =====================
 window.switchP2PTab = (type) => {
     p2p.fetchListings(type);
+    document.querySelectorAll('.p2p-type-btn').forEach(t => t.classList.remove('active'));
+    document.getElementById(`p2p-${type.toLowerCase()}-tab`)?.classList.add('active');
 };
+
+window.initiateP2PTrade = (listingId) => p2p.initiateTrade(listingId);
+window.p2pMarkPaid = (orderId) => p2p.markAsPaid(orderId);
+window.p2pRelease = (orderId) => p2p.releaseAssets(orderId);
+window.p2pCancelListing = (id) => p2p.cancelListing(id);
+window.p2pEditPrice = (id, currentPrice) => p2p.updatePrice(id, currentPrice);
+window.p2pSendMessage = () => p2p.sendMessage();
+
+// Chat event listener for Enter key
+document.getElementById('p2p-chat-input')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') window.p2pSendMessage();
+});
+document.getElementById('p2p-chat-send')?.addEventListener('click', () => window.p2pSendMessage());
 
 window.openCreateListing = () => {
     if (!auth.isAuthenticated()) return showToast('Error', 'Please login first', 'danger');
@@ -105,22 +121,58 @@ window.openCreateListing = () => {
     if (modal) modal.style.display = 'flex';
 };
 
-window.submitP2PAd = async () => {
-    const asset = document.getElementById('ad-asset')?.value;
-    const amount = parseFloat(document.getElementById('ad-amount')?.value);
-    const price = parseFloat(document.getElementById('ad-price')?.value);
-    if (!asset || !amount || !price) return showToast('Error', 'Fill in all fields', 'danger');
-    await p2p.createListing({
-        type: 'SELL',
-        fromCurrency: asset,
-        toCurrency: 'VND',
-        totalAmount: amount,
-        fixedRate: price,
-        minLimit: Math.floor(amount * 0.1),
-    });
-    const modal = document.getElementById('p2p-modal');
-    if (modal) modal.style.display = 'none';
+console.log("Global functions assigned: openCreateListing");
+
+let currentP2PType = 'SELL';
+window.setAdType = (type) => {
+    currentP2PType = type;
+    const buyBtn = document.getElementById('ad-type-buy');
+    const sellBtn = document.getElementById('ad-type-sell');
+    if (type === 'BUY') {
+        buyBtn.style.background = 'var(--primary)';
+        buyBtn.style.color = '#000';
+        sellBtn.style.background = 'var(--bg-surface)';
+        sellBtn.style.color = 'var(--text-secondary)';
+    } else {
+        sellBtn.style.background = 'var(--primary)';
+        sellBtn.style.color = '#000';
+        buyBtn.style.background = 'var(--bg-surface)';
+        buyBtn.style.color = 'var(--text-secondary)';
+    }
 };
+
+window.submitP2PAd = async () => {
+    console.log("Submitting P2P Ad...");
+    try {
+        const asset = document.getElementById('ad-asset')?.value;
+        const amount = parseFloat(document.getElementById('ad-amount')?.value);
+        const price = parseFloat(document.getElementById('ad-price')?.value);
+        
+        console.log("Ad Data:", { asset, amount, price, type: currentP2PType });
+        
+        if (!asset || !amount || !price) {
+            showToast('Error', 'Fill in all fields', 'danger');
+            return;
+        }
+
+        await p2p.createListing({
+            type: currentP2PType,
+            fromCurrency: asset,
+            toCurrency: 'VND',
+            totalAmount: amount,
+            fixedRate: price,
+            minLimit: Math.floor(amount * 0.1),
+        });
+
+        const modal = document.getElementById('p2p-modal');
+        if (modal) modal.style.display = 'none';
+    } catch (error) {
+        console.error("Submit P2P Ad Error:", error);
+        showToast('Error', error.message, 'danger');
+    }
+};
+
+console.log("Global functions assigned: submitP2PAd");
 
 // ===================== QUESTS =====================
 const loadQuests = async () => {

@@ -44,6 +44,9 @@ export class WalletManager {
      */
     refreshUI() {
         this.updateTotalBalanceDisplay();
+        if (window.market && typeof window.market.renderRates === 'function') {
+            window.market.renderRates();
+        }
         // Update swap calculation if modal is visible
         if (window.calculateSwap) window.calculateSwap();
     }
@@ -52,7 +55,7 @@ export class WalletManager {
      * Calculates and displays the total portfolio balance in USD.
      */
     updateTotalBalanceDisplay() {
-        const rates = market.currentRates || {};
+        const rates = window.market ? (window.market.currentRates || {}) : {};
         
         // Ensure we handle BigDecimals (strings) and rates properly
         const totalUSD = this.balances.reduce((acc, b) => {
@@ -62,8 +65,8 @@ export class WalletManager {
             // If rate is 0 and it's not USD, we can't value it properly, so skip
             if (rate === 0 && b.currencyCode !== 'USD') return acc;
             
-            // Value in USD = Amount / Rate (where Rate is units per 1 USD)
-            return acc + (balance / (rate || 1));
+            // Value in USD = Amount * Rate (where Rate is USD price per 1 unit)
+            return acc + (balance * rate);
         }, 0);
 
         const el = document.getElementById('total-balance');

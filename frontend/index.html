@@ -16,7 +16,8 @@
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
-    <link rel="stylesheet" href="css/style.css?v=20">
+    <link rel="stylesheet" href="css/style.css?v=21">
+    <link rel="stylesheet" href="css/p2p.css?v=1">
 </head>
 
 <body>
@@ -213,29 +214,35 @@
 
             <!-- P2P View -->
             <div id="p2p-view" class="view-content" style="display:none; padding:0;">
-                <div class="market-header" style="padding:1rem;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                        <h3 style="margin:0;">P2P Trading</h3>
-                        <button onclick="openCreateListing()"
-                            style="background:var(--primary); border:none; padding:6px 12px; border-radius:6px; font-weight:600; font-size:0.85rem; cursor:pointer;">Post
-                            Ad</button>
+                <div class="p2p-header-pro">
+                    <div class="p2p-type-switcher">
+                        <div class="p2p-type-btn active" id="p2p-buy-tab" onclick="switchP2PTab('BUY')">Buy</div>
+                        <div class="p2p-type-btn" id="p2p-sell-tab" onclick="switchP2PTab('SELL')">Sell</div>
                     </div>
-                    <div class="asset-tabs" style="padding:0; margin-bottom:0;">
-                        <div class="tab active" onclick="switchP2PTab('BUY')" id="p2p-buy-tab">Buy</div>
-                        <div class="tab" onclick="switchP2PTab('SELL')" id="p2p-sell-tab">Sell</div>
-                        <div style="flex:1;"></div>
-                        <div
-                            style="background:var(--bg-main); padding:4px 8px; border-radius:8px; display:flex; align-items:center; gap:6px; border:1px solid var(--border-color);">
-                            <i data-lucide="search" style="width:14px; color:var(--text-secondary);"></i>
-                            <input id="p2p-search" type="text" placeholder="Search ads..."
-                                style="background:transparent; border:none; color:var(--text-primary); font-size:0.75rem; outline:none; width:80px;">
-                        </div>
+                    <button onclick="openCreateListing()" class="p2p-post-btn">
+                        <i data-lucide="plus-circle" style="width:16px;"></i>
+                        <span>Post Ad</span>
+                    </button>
+                </div>
+
+                <div class="p2p-filter-bar">
+                    <div class="p2p-asset-pills">
+                        <span class="pill active">USDT</span>
+                        <span class="pill">BTC</span>
+                        <span class="pill">ETH</span>
+                        <span class="pill">BNB</span>
+                    </div>
+                    <div class="p2p-search-box">
+                        <i data-lucide="search"></i>
+                        <input type="text" placeholder="Amount / Payment method...">
                     </div>
                 </div>
-                <div id="p2p-ads-container" style="padding:10px;">
-                    <!-- P2P Ads will be injected here -->
+
+                <div id="p2p-ads-container" style="padding: 1rem; padding-bottom: 80px;">
+                    <!-- Premium Cards injected here -->
                 </div>
             </div>
+
 
             <!-- Mart View -->
             <div id="discover-view" class="view-content" style="display:none; padding:0;">
@@ -474,59 +481,164 @@
                     </div>
                 </div>
             </div>
-            <!-- P2P Post Ad Modal -->
-            <div id="p2p-modal" class="overlay" style="display:none;">
-                <div class="overlay-content" style="max-height:85vh; overflow-y:auto;">
-                    <div class="overlay-header">
-                        <div class="back-btn" onclick="document.getElementById('p2p-modal').style.display='none'"><i
-                                data-lucide="chevron-left"></i></div>
-                        <h4 style="margin:0;">Post P2P Ad</h4>
-                        <div style="width:32px;"></div>
+            <div id="toast-container"></div>
+            <script type="module" src="js/main.js?v=38"></script>
+            <script>window.addEventListener('DOMContentLoaded', () => { if(window.lucide) lucide.createIcons(); });</script>
+
+
+    <!-- Custom Action Modals for P2P (Moved outside app-wrapper to fix positioning) -->
+    <!-- Edit Price Modal -->
+    <div id="p2p-edit-modal" class="overlay" style="display:none; z-index:99999; flex-direction:column; justify-content:center; align-items:center; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8);">
+        <div class="overlay-content" style="width:90%; max-width:400px; padding:1.5rem; text-align:center; background:var(--bg-surface); border-radius:16px; border:1px solid var(--border-color); box-shadow:0 10px 40px rgba(0,0,0,0.5);">
+            <h3 style="margin-top:0;">Update Price</h3>
+            <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1rem;">Enter the new fixed price in VND for your ad.</p>
+            <input type="number" id="p2p-edit-price-input" placeholder="e.g. 250000" style="width:100%; padding:14px; background:var(--bg-main); border:1px solid var(--border-color); color:white; border-radius:12px; margin-bottom:1rem; font-size:1.1rem; text-align:center;">
+            <div style="display:flex; gap:10px;">
+                <button onclick="document.getElementById('p2p-edit-modal').style.display='none'" style="flex:1; padding:12px; border-radius:10px; background:var(--bg-surface-hover); border:1px solid var(--border-color); color:white; cursor:pointer; font-weight:600;">Cancel</button>
+                <button id="p2p-confirm-edit-btn" style="flex:1; padding:12px; border-radius:10px; background:var(--primary); border:none; color:black; font-weight:bold; cursor:pointer;">Update</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancel Confirm Modal -->
+    <div id="p2p-cancel-modal" class="overlay" style="display:none; z-index:99999; flex-direction:column; justify-content:center; align-items:center; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8);">
+        <div class="overlay-content" style="width:90%; max-width:400px; padding:1.5rem; text-align:center; background:var(--bg-surface); border-radius:16px; border:1px solid var(--border-color); box-shadow:0 10px 40px rgba(0,0,0,0.5);">
+            <div style="width:50px; height:50px; border-radius:50%; background:rgba(246,70,93,0.1); color:var(--down-color); display:flex; align-items:center; justify-content:center; margin:0 auto 1rem;">
+                <i data-lucide="alert-triangle"></i>
+            </div>
+            <h3 style="margin-top:0;">Cancel Ad?</h3>
+            <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1.5rem;">Are you sure you want to cancel this listing? This action cannot be undone.</p>
+            <div style="display:flex; gap:10px;">
+                <button onclick="document.getElementById('p2p-cancel-modal').style.display='none'" style="flex:1; padding:12px; border-radius:10px; background:var(--bg-surface-hover); border:1px solid var(--border-color); color:white; cursor:pointer; font-weight:600;">No, Keep it</button>
+                <button id="p2p-confirm-cancel-btn" style="flex:1; padding:12px; border-radius:10px; background:var(--down-color); border:none; color:white; font-weight:bold; cursor:pointer;">Yes, Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- P2P Post Ad Modal (Premium Redesign) -->
+    <div id="p2p-modal" class="overlay fade-in" style="display:none; z-index:99999; flex-direction:column; justify-content:center; align-items:center; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px);">
+        <div class="overlay-content" style="width:90%; max-width:450px; background:var(--bg-surface); border-radius:24px; padding:2rem; border:1px solid rgba(255,255,255,0.05); box-shadow:0 25px 60px rgba(0,0,0,0.6); position:relative; overflow:hidden;">
+            <!-- Background Glow -->
+            <div style="position:absolute; top:-50px; left:-50px; width:150px; height:150px; background:rgba(240,185,11,0.15); filter:blur(50px); border-radius:50%; z-index:0;"></div>
+            
+            <div style="position:relative; z-index:1;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                    <div>
+                        <h2 style="margin:0; font-size:1.5rem; font-weight:800; color:white;">Post P2P Ad</h2>
+                        <p style="margin:4px 0 0; font-size:0.85rem; color:var(--text-secondary);">Create a new trading offer</p>
                     </div>
-                    <div style="padding:1.5rem;">
-                        <div class="swap-input-group">
-                            <label>I want to:</label>
-                            <div style="display:flex; gap:10px; margin-top:8px;">
-                                <button id="ad-type-buy" onclick="setAdType('BUY')"
-                                    style="flex:1; padding:10px; border-radius:8px; border:none; background:var(--bg-surface); color:var(--text-secondary); cursor:pointer;">BUY</button>
-                                <button id="ad-type-sell" onclick="setAdType('SELL')"
-                                    style="flex:1; padding:10px; border-radius:8px; border:none; background:var(--primary); color:#000; font-weight:700; cursor:pointer;">SELL</button>
-                            </div>
-                        </div>
+                    <button onclick="document.getElementById('p2p-modal').style.display='none'" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; cursor:pointer; transition:all 0.2s;">
+                        <i data-lucide="x" style="width:18px;"></i>
+                    </button>
+                </div>
 
-                        <div class="swap-input-group" style="margin-top:20px;">
-                            <label>Asset</label>
-                            <select id="ad-asset"
-                                style="width:100%; padding:14px; background:var(--bg-main); border:1px solid var(--border-color); color:white; border-radius:12px; margin-top:8px;">
-                                <option value="BTC">Bitcoin (BTC)</option>
-                                <option value="ETH">Ethereum (ETH)</option>
-                                <option value="BNB">Binance Coin (BNB)</option>
-                                <option value="USD">US Dollar (USD)</option>
-                            </select>
-                        </div>
+                <div class="swap-input-group" style="margin-bottom:1.25rem;">
+                    <label style="display:block; font-size:0.85rem; font-weight:600; color:var(--text-secondary); margin-bottom:8px;">I want to:</label>
+                    <div style="display:flex; gap:10px; background:rgba(0,0,0,0.2); padding:6px; border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
+                        <button id="ad-type-buy" onclick="setAdType('BUY')" style="flex:1; padding:12px; border-radius:8px; border:none; background:var(--up-color); color:white; font-weight:700; cursor:pointer; transition:all 0.2s; box-shadow:0 4px 15px rgba(14,203,129,0.3);">BUY</button>
+                        <button id="ad-type-sell" onclick="setAdType('SELL')" style="flex:1; padding:12px; border-radius:8px; border:none; background:transparent; color:var(--text-secondary); font-weight:600; cursor:pointer; transition:all 0.2s;">SELL</button>
+                    </div>
+                </div>
 
-                        <div class="swap-input-group" style="margin-top:20px;">
-                            <label>Total Amount</label>
-                            <input type="number" id="ad-amount" placeholder="0.00"
-                                style="width:100%; padding:14px; background:var(--bg-main); border:1px solid var(--border-color); color:white; border-radius:12px; margin-top:8px;">
-                        </div>
+                <div class="swap-input-group" style="margin-bottom:1.25rem;">
+                    <label style="display:block; font-size:0.85rem; font-weight:600; color:var(--text-secondary); margin-bottom:8px;">Asset to Trade</label>
+                    <div style="position:relative;">
+                        <select id="ad-asset" style="width:100%; padding:14px 16px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:white; border-radius:12px; font-size:1rem; font-weight:600; appearance:none; cursor:pointer; outline:none;">
+                            <option value="USDT">USDT - Tether US</option>
+                            <option value="BTC">BTC - Bitcoin</option>
+                            <option value="ETH">ETH - Ethereum</option>
+                            <option value="BNB">BNB - Binance Coin</option>
+                        </select>
+                        <i data-lucide="chevron-down" style="position:absolute; right:16px; top:50%; transform:translateY(-50%); color:var(--text-secondary); pointer-events:none; width:18px;"></i>
+                    </div>
+                </div>
 
-                        <div class="swap-input-group" style="margin-top:20px;">
-                            <label>Fixed Price (VND)</label>
-                            <input type="number" id="ad-price" placeholder="Enter price per unit"
-                                style="width:100%; padding:14px; background:var(--bg-main); border:1px solid var(--border-color); color:white; border-radius:12px; margin-top:8px;">
-                        </div>
+                <div class="swap-input-group" style="margin-bottom:1.25rem;">
+                    <label style="display:block; font-size:0.85rem; font-weight:600; color:var(--text-secondary); margin-bottom:8px;">Total Amount</label>
+                    <div style="position:relative;">
+                        <input type="number" id="ad-amount" placeholder="0.00" style="width:100%; padding:14px 16px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:white; border-radius:12px; font-size:1.1rem; font-weight:700; outline:none; box-sizing:border-box;">
+                        <span style="position:absolute; right:16px; top:50%; transform:translateY(-50%); color:var(--text-secondary); font-weight:600; font-size:0.9rem;">Coins</span>
+                    </div>
+                </div>
 
-                        <button onclick="submitP2PAd()"
-                            style="width:100%; background:var(--primary); color:#000; border:none; padding:1rem; border-radius:12px; font-weight:700; font-size:1rem; margin-top:30px; cursor:pointer;">Post
-                            Ad</button>
+                <div class="swap-input-group" style="margin-bottom:2rem;">
+                    <label style="display:block; font-size:0.85rem; font-weight:600; color:var(--text-secondary); margin-bottom:8px;">Fixed Price (VND)</label>
+                    <div style="position:relative;">
+                        <input type="number" id="ad-price" placeholder="Enter price per unit" style="width:100%; padding:14px 16px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:var(--primary); border-radius:12px; font-size:1.2rem; font-weight:800; outline:none; box-sizing:border-box;">
+                        <span style="position:absolute; right:16px; top:50%; transform:translateY(-50%); color:var(--text-secondary); font-weight:600; font-size:0.9rem;">₫ / Unit</span>
+                    </div>
+                </div>
+
+                <button onclick="submitP2PAd()" style="width:100%; background:linear-gradient(90deg, var(--primary), #FFD56B); color:#000; border:none; padding:16px; border-radius:14px; font-weight:800; font-size:1.1rem; cursor:pointer; box-shadow:0 8px 25px rgba(240,185,11,0.3); transition:all 0.2s; text-transform:uppercase; letter-spacing:0.5px;">
+                    Confirm & Post Ad
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== P2P TRADING ROOM OVERLAY (Premium Redesign) ===================== -->
+    <div id="p2p-trading-overlay" class="overlay fade-in" style="display:none; z-index:99999; flex-direction:column; justify-content:center; align-items:center; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px);">
+        <div class="overlay-content" style="width:95%; max-width:500px; height:85vh; display:flex; flex-direction:column; padding:0; background:var(--bg-surface); border-radius:24px; border:1px solid rgba(255,255,255,0.05); box-shadow:0 25px 60px rgba(0,0,0,0.6); overflow:hidden;">
+            <!-- Header -->
+            <div style="padding:1.5rem; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.2);">
+                <div>
+                    <h2 style="margin:0; font-size:1.25rem; font-weight:800; color:white;">Trading Room</h2>
+                    <p id="p2p-order-id" style="margin:4px 0 0; font-size:0.8rem; color:var(--text-secondary);">Order #--</p>
+                </div>
+                <button onclick="document.getElementById('p2p-trading-overlay').style.display='none'" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; cursor:pointer; transition:all 0.2s;">
+                    <i data-lucide="x" style="width:18px;"></i>
+                </button>
+            </div>
+
+            <!-- Trade Info & Status -->
+            <div style="padding:1.25rem; background:rgba(240, 185, 11, 0.05); border-bottom:1px solid rgba(255,255,255,0.05);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                    <div>
+                        <p id="p2p-order-status" style="margin:0; font-weight:800; color:var(--primary); font-size:1.1rem; letter-spacing:0.5px;">PENDING</p>
+                        <p style="margin:4px 0 0; font-size:0.8rem; color:var(--text-secondary);">Please complete payment within 15:00</p>
+                    </div>
+                    <div style="text-align:right;">
+                        <h2 id="p2p-order-price" style="margin:0; font-size:1.4rem; font-weight:800; color:white;">0 VND</h2>
+                        <p id="p2p-order-amount" style="margin:4px 0 0; font-size:0.85rem; color:var(--text-secondary);">0.00 --</p>
+                    </div>
+                </div>
+                
+                <!-- Payment Steps -->
+                <div id="p2p-payment-details" style="background:rgba(0,0,0,0.3); border-radius:12px; padding:1rem; border:1px solid rgba(255,255,255,0.05);">
+                    <p style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:10px; font-weight:600; text-transform:uppercase;">Seller Payment Details</p>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span style="font-size:0.9rem; color:var(--text-secondary);">Bank Name</span>
+                        <span style="font-weight:700; color:white;">Binance Bank</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span style="font-size:0.9rem; color:var(--text-secondary);">Account Number</span>
+                        <span id="p2p-seller-account" style="font-weight:800; color:var(--primary); font-size:1rem; letter-spacing:1px;">9999 8888 7777</span>
                     </div>
                 </div>
             </div>
 
-            <div id="toast-container"></div>
-            <script type="module" src="js/main.js?v=35"></script>
-            <script>window.addEventListener('DOMContentLoaded', () => lucide.createIcons());</script>
-</body>
+            <!-- Chat Messages -->
+            <div id="p2p-chat-container" style="flex:1; overflow-y:auto; padding:1rem; display:flex; flex-direction:column; gap:12px; background:linear-gradient(180deg, rgba(0,0,0,0.1) 0%, transparent 100%);">
+                <!-- Messages will be injected here -->
+            </div>
 
+            <!-- Chat Input & Actions -->
+            <div style="padding:1.25rem; border-top:1px solid rgba(255,255,255,0.05); background:rgba(0,0,0,0.2);">
+                <div id="p2p-order-actions" style="display:flex; gap:10px; margin-bottom:1rem;">
+                    <!-- Contextual buttons will be here -->
+                    <button id="p2p-btn-pay" style="flex:2; background:linear-gradient(90deg, var(--primary), #FFD56B); color:#000; border:none; padding:14px; border-radius:12px; font-weight:800; cursor:pointer; box-shadow:0 4px 15px rgba(240,185,11,0.2);">I have paid</button>
+                    <button id="p2p-btn-cancel" style="flex:1; background:rgba(246,70,93,0.1); color:var(--down-color); border:1px solid rgba(246,70,93,0.3); padding:14px; border-radius:12px; font-weight:700; cursor:pointer;">Cancel</button>
+                </div>
+                
+                <div style="display:flex; gap:10px;">
+                    <input id="p2p-chat-input" type="text" placeholder="Type a message..." 
+                        style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:12px 16px; color:white; font-size:0.95rem; outline:none; transition:border-color 0.2s;">
+                    <button id="p2p-chat-send" style="background:var(--primary); border:none; border-radius:12px; width:48px; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 4px 10px rgba(240,185,11,0.2);">
+                        <i data-lucide="send" style="width:20px; color:black;"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
 </html>

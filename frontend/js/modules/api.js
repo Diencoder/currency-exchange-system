@@ -29,5 +29,12 @@ export const apiFetch = async (endpoint, options = {}) => {
         throw new Error(errorData.message || `API Error: ${response.status}`);
     }
 
-    return response.status === 204 ? null : response.json();
+    if (response.status === 204) return null;
+    
+    const text = await response.text();
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        return text;
+    }
 };

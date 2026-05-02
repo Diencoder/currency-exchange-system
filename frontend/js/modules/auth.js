@@ -56,6 +56,10 @@ export class AuthManager {
         return false;
     }
 
+    isAuthenticated() {
+        return !!this.currentUser;
+    }
+
     logout() {
         localStorage.removeItem('jwt_token');
         localStorage.removeItem('user_data');

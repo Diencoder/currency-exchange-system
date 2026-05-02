@@ -14,7 +14,10 @@ import java.math.BigDecimal;
 public class P2PListing extends BaseEntity {
 
     @Column(nullable = false)
-    private Long sellerId;
+    private Long sellerId; // This is the merchant ID
+
+    @Enumerated(EnumType.STRING)
+    private ListingType type = ListingType.SELL;
 
     @Column(nullable = false)
     private String fromCurrency;
@@ -40,6 +43,7 @@ public class P2PListing extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private ListingStatus status = ListingStatus.ACTIVE;
 
+    public enum ListingType { BUY, SELL }
     public enum RateType { FIXED, FLOATING }
     public enum ListingStatus { ACTIVE, PAUSED, COMPLETED, CANCELLED }
 }

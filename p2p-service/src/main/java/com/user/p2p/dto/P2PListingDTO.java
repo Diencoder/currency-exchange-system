@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 public class P2PListingDTO {
     private Long id;
     private Long sellerId;
+    private String type;
     private String fromCurrency;
     private String toCurrency;
     private BigDecimal totalAmount;

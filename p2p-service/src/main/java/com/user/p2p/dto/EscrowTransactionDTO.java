@@ -11,9 +11,13 @@ public class EscrowTransactionDTO {
     private Long buyerId;
     private Long sellerId;
     private BigDecimal amount;
+    private BigDecimal totalPrice;
+    private String fromCurrency;
+    private String toCurrency;
     private String status;
     private boolean buyerConfirmed;
     private boolean sellerConfirmed;
+    private String paymentProof;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

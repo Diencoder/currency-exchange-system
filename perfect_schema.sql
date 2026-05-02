@@ -176,7 +176,7 @@ CREATE TABLE IF NOT EXISTS escrow_transactions (
     -- Idempotency key
     idempotency_key VARCHAR(64) UNIQUE,
     
-    status ENUM('HOLDING', 'RELEASED', 'DISPUTED', 'CANCELLED', 'REFUNDED') DEFAULT 'HOLDING',
+    status VARCHAR(255) DEFAULT 'PENDING',
     buyer_confirmed BOOLEAN DEFAULT FALSE,
     seller_confirmed BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
