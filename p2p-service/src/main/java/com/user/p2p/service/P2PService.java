@@ -116,7 +116,19 @@ public class P2PService {
                 .status(EscrowTransaction.EscrowStatus.PENDING)
                 .build();
 
-        return convertToEscrowDTO(escrowRepository.save(escrow));
+        EscrowTransaction savedEscrow = escrowRepository.save(escrow);
+        
+        P2PEvent event = P2PEvent.builder()
+                .eventType("INITIATED")
+                .escrowId(savedEscrow.getId())
+                .buyerId(savedEscrow.getBuyerId())
+                .sellerId(savedEscrow.getSellerId())
+                .currencyCode(savedEscrow.getFromCurrency())
+                .amount(savedEscrow.getAmount())
+                .build();
+        kafkaTemplate.send(p2pTopic, event);
+
+        return convertToEscrowDTO(savedEscrow);
     }
 
     @Transactional
@@ -132,7 +144,19 @@ public class P2PService {
         escrow.setBuyerConfirmed(true);
         escrow.setPaymentProof(proofUrl);
         
-        return convertToEscrowDTO(escrowRepository.save(escrow));
+        EscrowTransaction savedEscrow = escrowRepository.save(escrow);
+        
+        P2PEvent event = P2PEvent.builder()
+                .eventType("PAID")
+                .escrowId(savedEscrow.getId())
+                .buyerId(savedEscrow.getBuyerId())
+                .sellerId(savedEscrow.getSellerId())
+                .currencyCode(savedEscrow.getFromCurrency())
+                .amount(savedEscrow.getAmount())
+                .build();
+        kafkaTemplate.send(p2pTopic, event);
+
+        return convertToEscrowDTO(savedEscrow);
     }
 
     @Transactional
@@ -168,7 +192,19 @@ public class P2PService {
                 .orElseThrow(() -> new RuntimeException("Escrow not found"));
         
         escrow.setStatus(EscrowTransaction.EscrowStatus.DISPUTED);
-        return convertToEscrowDTO(escrowRepository.save(escrow));
+        EscrowTransaction savedEscrow = escrowRepository.save(escrow);
+        
+        P2PEvent event = P2PEvent.builder()
+                .eventType("DISPUTED")
+                .escrowId(savedEscrow.getId())
+                .buyerId(savedEscrow.getBuyerId())
+                .sellerId(savedEscrow.getSellerId())
+                .currencyCode(savedEscrow.getFromCurrency())
+                .amount(savedEscrow.getAmount())
+                .build();
+        kafkaTemplate.send(p2pTopic, event);
+
+        return convertToEscrowDTO(savedEscrow);
     }
 
     // ===================== CHAT LOGIC =====================

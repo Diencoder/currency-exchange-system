@@ -1,0 +1,37 @@
+/* ===================== MARKET VIEW STYLES ===================== */
+.market-header {
+    background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%);
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+#market-pair-title {
+    font-weight: 900;
+}
+
+#market-pair-price {
+    font-size: 1.5rem;
+    font-weight: 900;
+}
+
+.chart-controls {
+    background: #161A1E;
+    padding: 4px;
+    border-radius: 12px;
+    display: inline-flex;
+    margin-top: 1.25rem;
+}
+
+.t-btn {
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-weight: 700;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+}
+
+.t-btn.active {
+    background: var(--primary);
+    color: #000;
+}

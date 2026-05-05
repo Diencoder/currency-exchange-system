@@ -29,7 +29,7 @@ class P2PManager {
 
         if (this.listings.length === 0) {
             container.innerHTML = '<div style="text-align:center; padding:3rem; color:var(--text-secondary);"><i data-lucide="inbox" style="width:48px; height:48px; margin-bottom:1rem; opacity:0.3;"></i><p>No active ads found.</p></div>';
-            if (window.lucide) lucide.createIcons();
+            if (window.lucide) window.lucide.createIcons();
             return;
         }
 
@@ -45,30 +45,44 @@ class P2PManager {
                     <div class="merchant-avatar">${l.username ? l.username.charAt(0).toUpperCase() : (l.sellerId ? 'M' : '?')}</div>
                     <div class="merchant-meta">
                         <div class="name">${l.username || 'Merchant #' + l.sellerId} <i data-lucide="check-circle-2" style="width:14px; color:var(--up-color);"></i></div>
-                        <div class="stats">120 Trades | 98.5% Completion</div>
+                        <div class="stats">
+                            <span style="color:var(--up-color); font-weight:700;">100+ Trades</span>
+                            <span style="color:var(--text-secondary); margin:0 4px;">|</span>
+                            <span>99% Completion</span>
+                        </div>
                     </div>
                 </div>
 
                 <div class="p2p-price-row">
-                    <div class="price-main">${(l.fixedRate || 0).toLocaleString()} <span>VND</span></div>
+                    <div class="price-main">${(l.fixedRate || 0).toLocaleString()} <span style="font-size:0.8rem; opacity:0.6;">VND</span></div>
                     <div class="limit-info">
-                        Available: ${l.remainingAmount} ${l.fromCurrency}<br>
-                        Limit: ${(l.minLimit || 0).toLocaleString()} - ${(l.totalAmount || 0).toLocaleString()}
+                        <div style="font-size:0.7rem; text-transform:uppercase; color:var(--text-secondary); margin-bottom:2px;">Available</div>
+                        <div style="color:white; font-weight:700;">${l.remainingAmount} ${l.fromCurrency}</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:1.5rem;">
+                    <div style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:4px;">Limit Range</div>
+                    <div style="font-weight:600; font-size:0.85rem; color:var(--text-primary);">
+                        ₫ ${(l.minLimit || 0).toLocaleString()} - ₫ ${(l.totalAmount * l.fixedRate).toLocaleString()}
                     </div>
                 </div>
 
                 <div class="p2p-action-row">
                     <div class="p2p-methods">
-                        <div class="method-tag tag-bank" title="Bank Transfer"></div>
+                        <div style="display:flex; align-items:center; gap:6px; background:rgba(240,185,11,0.1); padding:4px 10px; border-radius:8px; border:1px solid rgba(240,185,11,0.2);">
+                            <div class="method-tag tag-bank"></div>
+                            <span style="font-size:0.7rem; color:var(--primary); font-weight:700;">BANK TRANSFER</span>
+                        </div>
                     </div>
-                    <div style="display:flex; gap:8px;">
+                    <div style="display:flex; gap:10px;">
                         ${isMyAd ? `
                             <button onclick="window.p2p.updatePrice(${l.id}, ${l.fixedRate})" 
-                                    style="background:var(--bg-surface-hover); color:var(--primary); border:1px solid var(--primary); padding:8px 16px; border-radius:10px; font-weight:700; font-size:0.8rem; cursor:pointer; position:relative !important; z-index:99999 !important; pointer-events:auto !important;">Edit</button>
+                                    style="background:rgba(255,255,255,0.05); color:var(--primary); border:1px solid rgba(240,185,11,0.3); padding:10px 20px; border-radius:12px; font-weight:700; font-size:0.85rem; cursor:pointer;">Edit</button>
                             <button onclick="window.p2p.cancelListing(${l.id})" 
-                                    style="background:var(--bg-surface-hover); color:var(--down-color); border:1px solid var(--down-color); padding:8px 16px; border-radius:10px; font-weight:700; font-size:0.8rem; cursor:pointer; position:relative !important; z-index:99999 !important; pointer-events:auto !important;">Cancel</button>
+                                    style="background:rgba(246,70,93,0.05); color:var(--down-color); border:1px solid rgba(246,70,93,0.2); padding:10px 20px; border-radius:12px; font-weight:700; font-size:0.85rem; cursor:pointer;">Cancel</button>
                         ` : `
-                            <button onclick="window.initiateP2PTrade(${l.id})" 
+                            <button onclick="window.p2p.openInitModal(${l.id})" 
                                     class="p2p-trade-btn ${type === 'SELL' ? '' : 'sell'}">
                                 ${type === 'SELL' ? 'Buy' : 'Sell'} ${l.fromCurrency}
                             </button>
@@ -81,45 +95,93 @@ class P2PManager {
         if (window.lucide) lucide.createIcons();
     }
 
-    async initiateTrade(listingId) {
-        if (!auth.isAuthenticated()) return showToast('Error', 'Please login first', 'danger');
-        
+    openInitModal(listingId) {
         const listing = this.listings.find(l => l.id === listingId);
         if (!listing) return;
-
-        if (listing.sellerId === auth.currentUser.id) {
+        
+        if (auth.currentUser && listing.sellerId === auth.currentUser.id) {
             return showToast('Warning', 'You cannot trade your own ad', 'warning');
         }
 
-        const btn = document.getElementById(`trade-btn-${listingId}`);
-        if (btn) {
-            btn.disabled = true;
-            btn.innerText = 'Processing...';
+        this.selectedListing = listing;
+        const modal = document.getElementById('p2p-init-modal');
+        if (!modal) return;
+
+        // Fill modal details
+        document.getElementById('init-modal-title').innerText = `${listing.type === 'SELL' ? 'Buy' : 'Sell'} ${listing.fromCurrency}`;
+        document.getElementById('init-modal-price').innerText = `${(listing.fixedRate || 0).toLocaleString()} VND`;
+        document.getElementById('init-modal-available').innerText = `${listing.remainingAmount} ${listing.fromCurrency}`;
+        document.getElementById('init-modal-limit').innerText = `${(listing.minLimit || 0).toLocaleString()} - ${(listing.totalAmount * listing.fixedRate).toLocaleString()} VND`;
+        document.getElementById('init-modal-asset-label').innerText = listing.fromCurrency;
+        
+        // Reset inputs
+        const fiatInput = document.getElementById('p2p-init-fiat-input');
+        const cryptoInput = document.getElementById('p2p-init-crypto-input');
+        fiatInput.value = '';
+        cryptoInput.value = '';
+
+        modal.style.display = 'flex';
+        if (window.lucide) lucide.createIcons();
+
+        // Setup confirm button
+        document.getElementById('p2p-confirm-trade-btn').onclick = () => this.confirmTrade();
+    }
+
+    syncInitAmount(source) {
+        if (!this.selectedListing) return;
+        const rate = this.selectedListing.fixedRate;
+        const fiatInput = document.getElementById('p2p-init-fiat-input');
+        const cryptoInput = document.getElementById('p2p-init-crypto-input');
+
+        if (source === 'fiat') {
+            const fiat = parseFloat(fiatInput.value) || 0;
+            cryptoInput.value = (fiat / rate).toFixed(6);
+        } else {
+            const crypto = parseFloat(cryptoInput.value) || 0;
+            fiatInput.value = Math.round(crypto * rate);
+        }
+    }
+
+    async confirmTrade() {
+        if (!auth.isAuthenticated()) return showToast('Error', 'Please login first', 'danger');
+        if (!this.selectedListing) return;
+
+        const cryptoAmount = parseFloat(document.getElementById('p2p-init-crypto-input').value);
+        const fiatAmount = parseFloat(document.getElementById('p2p-init-fiat-input').value);
+
+        if (!cryptoAmount || cryptoAmount <= 0) {
+            return showToast('Error', 'Please enter a valid amount', 'warning');
         }
 
-        // For simplicity, we trade 0.01 of the asset or min limit
-        const amount = listing.minLimit / listing.fixedRate;
+        if (fiatAmount < this.selectedListing.minLimit) {
+            return showToast('Error', `Minimum order is ${this.selectedListing.minLimit.toLocaleString()} VND`, 'warning');
+        }
+
+        const btn = document.getElementById('p2p-confirm-trade-btn');
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = 'Creating Order...';
 
         try {
             const order = await apiFetch('/p2p/escrow', {
                 method: 'POST',
                 body: JSON.stringify({
-                    listingId: listingId,
+                    listingId: this.selectedListing.id,
                     buyerId: auth.currentUser.id,
-                    amount: amount,
+                    amount: cryptoAmount,
                     idempotencyKey: `p2p-${auth.currentUser.id}-${Date.now()}`
                 })
             });
             
             this.currentOrder = order;
+            document.getElementById('p2p-init-modal').style.display = 'none';
             this.openTradingRoom(order);
+            showToast('Success', 'Order created successfully!', 'success');
         } catch (error) {
             showToast('Trade Failed', error.message, 'danger');
         } finally {
-            if (btn) {
-                btn.disabled = false;
-                btn.innerText = `Trade ${listing.fromCurrency}`;
-            }
+            btn.disabled = false;
+            btn.innerText = originalText;
         }
     }
 
@@ -147,11 +209,11 @@ class P2PManager {
 
         let buttons = '';
         if (order.status === 'PENDING' && isBuyer) {
-            buttons = `<button onclick="window.p2pMarkPaid(${order.id})" class="btn-primary" style="flex:2;">I have paid</button>
-                       <button onclick="window.p2pCancel(${order.id})" style="flex:1; background:var(--bg-main); color:var(--down-color); border:1px solid var(--border-color); border-radius:8px; cursor:pointer;">Cancel</button>`;
+            buttons = `<button onclick="window.p2p.markAsPaid(${order.id})" class="btn-primary" style="flex:2;">I have paid</button>
+                       <button onclick="window.p2p.cancelOrder(${order.id})" style="flex:1; background:var(--bg-main); color:var(--down-color); border:1px solid var(--border-color); border-radius:8px; cursor:pointer;">Cancel</button>`;
         } else if (order.status === 'PAID' && isSeller) {
-            buttons = `<button onclick="window.p2pRelease(${order.id})" class="btn-primary" style="flex:2;">Release Assets</button>
-                       <button onclick="window.p2pDispute(${order.id})" style="flex:1; background:var(--bg-main); color:var(--down-color); border:1px solid var(--border-color); border-radius:8px; cursor:pointer;">Dispute</button>`;
+            buttons = `<button onclick="window.p2p.releaseAssets(${order.id})" class="btn-primary" style="flex:2;">Release Assets</button>
+                       <button onclick="window.p2p.disputeOrder(${order.id})" style="flex:1; background:var(--bg-main); color:var(--down-color); border:1px solid var(--border-color); border-radius:8px; cursor:pointer;">Dispute</button>`;
         } else if (order.status === 'PAID' && isBuyer) {
             buttons = `<p style="font-size:0.85rem; color:var(--text-secondary);">Waiting for seller to release assets...</p>`;
         } else if (order.status === 'RELEASED') {
@@ -210,13 +272,11 @@ class P2PManager {
         const container = document.getElementById('p2p-chat-container');
         if (!container) return;
 
-        const isMe = msg.senderId === auth.currentUser.id;
+        const isMe = auth.currentUser && msg.senderId === auth.currentUser.id;
         const msgHtml = `
-            <div style="align-self: ${isMe ? 'flex-end' : 'flex-start'}; 
-                        background: ${isMe ? 'var(--primary)' : 'var(--bg-main)'}; 
-                        color: ${isMe ? 'black' : 'white'}; 
-                        padding: 8px 12px; border-radius: 12px; max-width: 80%; font-size: 0.85rem;">
+            <div class="chat-bubble ${isMe ? 'me' : 'them'} fade-in">
                 ${msg.content}
+                <div style="font-size:0.6rem; opacity:0.6; margin-top:4px; text-align:right;">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
             </div>
         `;
         container.insertAdjacentHTML('beforeend', msgHtml);

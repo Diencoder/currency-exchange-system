@@ -13,8 +13,9 @@ import java.util.function.Predicate;
 public class RouteValidator {
 
     public static final List<String> openApiEndpoints = List.of(
-            "/api/users/auth/",
+            "/api/users/auth",
             "/api/exchange/rates",
+            "/api/notifications/ws/**",
             "/eureka",
             "/v3/api-docs",
             "/swagger-ui"
@@ -23,9 +24,10 @@ public class RouteValidator {
     public Predicate<ServerHttpRequest> isSecured =
             request -> {
                 String path = request.getURI().getPath();
+                // If path starts with any open endpoint, it's NOT secured
                 return openApiEndpoints
                         .stream()
-                        .noneMatch(uri -> path.contains(uri) || path.startsWith(uri));
+                        .noneMatch(uri -> path.startsWith(uri) || path.contains(uri));
             };
 
 }

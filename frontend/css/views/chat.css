@@ -1,0 +1,43 @@
+/* ===================== CHAT VIEW STYLES ===================== */
+.chat-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.chat-item {
+    background: var(--bg-surface);
+    border-radius: 20px;
+    padding: 1.25rem;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    border: 1px solid var(--border-color);
+}
+
+.chat-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    background: #2B3139;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-meta {
+    flex: 1;
+}
+
+.chat-badge {
+    background: var(--primary);
+    color: #000;
+    font-size: 0.7rem;
+    font-weight: 900;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

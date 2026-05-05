@@ -1,6 +1,7 @@
 package com.user.notification.consumer;
 
 import com.user.common.dto.TransactionEvent;
+import com.user.common.dto.P2PEvent;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,22 +31,31 @@ public class NotificationConsumer {
             "type", "success"
         );
         
-        messagingTemplate.convertAndSend("/topic/notifications", notification);
+        // Broadcast to specific user if userId is available in TransactionEvent
+        if (event.getUserId() != null) {
+            messagingTemplate.convertAndSend("/topic/notifications/" + event.getUserId(), notification);
+        } else {
+            messagingTemplate.convertAndSend("/topic/notifications", notification);
+        }
     }
 
     @KafkaListener(topics = "p2p-events", groupId = "notification-group")
-    public void consumeP2P(Map<String, Object> message) {
-        logger.info("Received P2P event: {}", message);
+    public void consumeP2P(P2PEvent event) {
+        logger.info("Received P2P event: {}", event);
         
-        String type = (String) message.get("type");
-        String status = (String) message.get("status");
+        String type = event.getEventType();
         
         Map<String, Object> notification = Map.of(
-            "title", "P2P Alert",
-            "message", "P2P " + type + " trade is now " + status,
+            "title", "P2P Trade Update",
+            "message", "Your P2P trade status is now: " + type,
             "type", "info"
         );
         
-        messagingTemplate.convertAndSend("/topic/notifications", notification);
+        if (event.getSellerId() != null) {
+            messagingTemplate.convertAndSend("/topic/notifications/" + event.getSellerId(), notification);
+        }
+        if (event.getBuyerId() != null) {
+            messagingTemplate.convertAndSend("/topic/notifications/" + event.getBuyerId(), notification);
+        }
     }
 }

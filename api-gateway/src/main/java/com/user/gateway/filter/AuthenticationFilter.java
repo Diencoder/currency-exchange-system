@@ -28,21 +28,36 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     public GatewayFilter apply(Config config) {
         return ((exchange, chain) -> {
             if (validator.isSecured.test(exchange.getRequest())) {
-                // Check if header contains token
-                if (!exchange.getRequest().getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
-                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing authorization header");
+                String token = null;
+
+                // Try to get token from header
+                if (exchange.getRequest().getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
+                    String authHeader = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION).get(0);
+                    if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                        token = authHeader.substring(7);
+                        System.out.println("TOKEN EXTRACTED FROM HEADER");
+                    }
+                } else {
+                    // Try to get token from query param (for WebSockets/SockJS)
+                    token = exchange.getRequest().getQueryParams().getFirst("token");
+                    if (token != null) {
+                        System.out.println("TOKEN EXTRACTED FROM QUERY PARAM: " + token.substring(0, 10) + "...");
+                    } else {
+                        System.out.println("NO TOKEN FOUND IN QUERY PARAM EITHER");
+                    }
                 }
 
-                String authHeader = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION).get(0);
-                if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                    authHeader = authHeader.substring(7);
+                if (token == null) {
+                    throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE, "Missing authentication token (GATEWAY)");
                 }
                 
                 try {
                     // Validate token
-                    jwtUtil.validateToken(authHeader);
+                    jwtUtil.validateToken(token);
+                    System.out.println("TOKEN VALIDATED SUCCESSFULLY");
                 } catch (Exception e) {
-                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid access token");
+                    System.out.println("TOKEN VALIDATION FAILED: " + e.getMessage());
+                    throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED, "Invalid access token (GATEWAY)");
                 }
             }
             return chain.filter(exchange);

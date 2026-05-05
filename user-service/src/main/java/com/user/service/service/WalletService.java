@@ -25,17 +25,37 @@ public class WalletService {
 
     @Transactional
     public void createDefaultWallet(User user) {
-        Wallet vndWallet = Wallet.builder()
-                .user(user)
-                .currencyCode("VND")
-                .balance(BigDecimal.ZERO)
-                .lockedBalance(BigDecimal.ZERO)
-                .build();
-        walletRepository.save(vndWallet);
+        // Create or Update VND Wallet with 100M
+        Wallet vndWallet = walletRepository.findByUserIdAndCurrencyCode(user.getId(), "VND")
+                .orElse(Wallet.builder().user(user).currencyCode("VND").lockedBalance(BigDecimal.ZERO).build());
+        if (vndWallet.getBalance() == null || vndWallet.getBalance().compareTo(BigDecimal.ZERO) <= 0) {
+            vndWallet.setBalance(new BigDecimal("100000000.00"));
+            walletRepository.save(vndWallet);
+        }
+
+        // Create or Update USD Wallet with 5k
+        Wallet usdWallet = walletRepository.findByUserIdAndCurrencyCode(user.getId(), "USD")
+                .orElse(Wallet.builder().user(user).currencyCode("USD").lockedBalance(BigDecimal.ZERO).build());
+        if (usdWallet.getBalance() == null || usdWallet.getBalance().compareTo(BigDecimal.ZERO) <= 0) {
+            usdWallet.setBalance(new BigDecimal("5000.00"));
+            walletRepository.save(usdWallet);
+        }
     }
 
     public List<WalletDTO> getWalletsByUserId(Long userId) {
-        return walletRepository.findByUserId(userId).stream()
+        List<Wallet> wallets = walletRepository.findByUserId(userId);
+        
+        // If user has no wallets or zero balances, ensure they get initial funds
+        boolean hasZeroVnd = wallets.stream().anyMatch(w -> w.getCurrencyCode().equals("VND") && w.getBalance().compareTo(BigDecimal.ZERO) <= 0);
+        
+        if (wallets.isEmpty() || hasZeroVnd) {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+            createDefaultWallet(user);
+            wallets = walletRepository.findByUserId(userId);
+        }
+        
+        return wallets.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }

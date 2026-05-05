@@ -16,10 +16,24 @@ export class WalletManager {
      */
     async fetchBalances() {
         if (!auth.isAuthenticated()) return;
+        const user = auth.currentUser || JSON.parse(localStorage.getItem('user_data'));
+        
+        if (!user || !user.id) {
+            console.error("Cannot fetch balances: User ID missing", user);
+            return;
+        }
+
         try {
-            const data = await apiFetch(`/users/wallets/user/${auth.currentUser.id}`);
+            console.log(`Fetching balances for user ID: ${user.id}...`);
+            const data = await apiFetch(`/users/wallets/user/${user.id}`);
+            console.log("Balances received (stringified):", JSON.stringify(data));
             this.balances = data || [];
-            this.refreshUI();
+            
+            // Force a small delay to ensure DOM is ready
+            setTimeout(() => {
+                this.refreshUI();
+                console.log("UI Refresh triggered after data load");
+            }, 100);
         } catch (error) {
             console.error("Fetch balances error:", error);
         }
@@ -44,6 +58,7 @@ export class WalletManager {
      */
     refreshUI() {
         this.updateTotalBalanceDisplay();
+        this.renderAssets();
         if (window.market && typeof window.market.renderRates === 'function') {
             window.market.renderRates();
         }
@@ -91,6 +106,44 @@ export class WalletManager {
     /**
      * Renders the transaction history list into the DOM.
      */
+    renderAssets() {
+        const container = document.getElementById('asset-list');
+        if (!container) return;
+
+        const rates = window.market ? (window.market.currentRates || {}) : {};
+        
+        if (this.balances.length === 0) {
+            container.innerHTML = `<p style="color:var(--text-secondary); padding:20px; text-align:center;">No assets found. Start by buying some!</p>`;
+            return;
+        }
+
+        container.innerHTML = this.balances.map(b => {
+            const balance = parseFloat(b.balance) || 0;
+            const rate = parseFloat(rates[b.currencyCode]) || (b.currencyCode === 'USD' ? 1 : 0);
+            const valueUSD = balance * rate;
+            
+            return `
+                <div class="asset-row fade-in">
+                    <div class="asset-info">
+                        <div class="asset-icon" style="background: rgba(252, 213, 53, 0.1); color: var(--primary);">
+                            <i data-lucide="circle-dollar-sign"></i>
+                        </div>
+                        <div class="asset-details">
+                            <h4 style="font-weight: 700;">${b.currencyCode}</h4>
+                            <p style="color: var(--text-secondary); font-size: 0.75rem;">$${rate.toLocaleString()}</p>
+                        </div>
+                    </div>
+                    <div class="asset-value" style="text-align: right;">
+                        <div style="font-weight: 800;">${balance.toLocaleString()} ${b.currencyCode}</div>
+                        <div style="color: var(--text-secondary); font-size: 0.75rem;">≈ $${valueUSD.toLocaleString()}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        if (window.lucide) window.lucide.createIcons();
+    }
+
     renderTransactions() {
         const container = document.getElementById('tx-history-list');
         if (!container) return;

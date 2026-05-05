@@ -17,6 +17,12 @@ spring:
             allowedHeaders: "*"
             allowCredentials: true
       routes:
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/notifications/**
+          filters:
+            - AuthenticationFilter
         - id: user-service
           uri: lb://user-service
           predicates:
@@ -39,12 +45,6 @@ spring:
           uri: lb://p2p-service
           predicates:
             - Path=/api/p2p/**
-          filters:
-            - AuthenticationFilter
-        - id: notification-service
-          uri: lb://notification-service
-          predicates:
-            - Path=/api/notifications/**
           filters:
             - AuthenticationFilter
 

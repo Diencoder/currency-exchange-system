@@ -10,28 +10,20 @@ export class AuthManager {
     }
 
     async login(username, password) {
-        try {
-            const data = await apiFetch('/users/auth/signin', {
-                method: 'POST',
-                body: JSON.stringify({ username, password })
-            });
-            this.saveSession(data);
-            return data;
-        } catch (error) {
-            throw error;
-        }
+        const data = await apiFetch('/users/auth/signin', {
+            method: 'POST',
+            body: JSON.stringify({ username, password })
+        });
+        this.saveSession(data);
+        window.dispatchEvent(new CustomEvent('authChange'));
+        return data;
     }
 
     async register(username, email, password) {
-        try {
-            const response = await apiFetch('/users/auth/signup', {
-                method: 'POST',
-                body: JSON.stringify({ username, email, password, role: "user" })
-            });
-            return response;
-        } catch (error) {
-            throw error;
-        }
+        return await apiFetch('/users/auth/signup', {
+            method: 'POST',
+            body: JSON.stringify({ username, email, password, role: "user" })
+        });
     }
 
     saveSession(data) {
@@ -50,8 +42,7 @@ export class AuthManager {
                 return true;
             }
         } catch (e) {
-            console.error("Session load error:", e);
-            this.logout();
+            this.performLogout();
         }
         return false;
     }
@@ -60,14 +51,43 @@ export class AuthManager {
         return !!this.currentUser;
     }
 
-    logout() {
-        localStorage.removeItem('jwt_token');
-        localStorage.removeItem('user_data');
+    performLogout() {
+        localStorage.clear();
         this.currentUser = null;
+        window.dispatchEvent(new CustomEvent('authChange'));
     }
 
-    isAuthenticated() {
-        return !!this.currentUser;
+    // UI Handlers
+    async handleLogin() {
+        const user = document.getElementById('login-username').value;
+        const pass = document.getElementById('login-password').value;
+        try {
+            await this.login(user, pass);
+            window.ui.showToast('Success', 'Logged in successfully');
+        } catch (e) {
+            window.ui.showToast('Login Failed', e.message, 'error');
+        }
+    }
+
+    async handleRegister() {
+        const user = document.getElementById('reg-username').value;
+        const email = document.getElementById('reg-email').value;
+        const pass = document.getElementById('reg-password').value;
+        try {
+            await this.register(user, email, pass);
+            window.ui.showToast('Success', 'Account created! Please login.');
+            this.switchTab('login');
+        } catch (e) {
+            window.ui.showToast('Registration Failed', e.message, 'error');
+        }
+    }
+
+    switchTab(tab) {
+        const isLogin = tab === 'login';
+        document.getElementById('login-form').style.display = isLogin ? 'block' : 'none';
+        document.getElementById('register-form').style.display = isLogin ? 'none' : 'block';
+        document.getElementById('tab-login').classList.toggle('active', isLogin);
+        document.getElementById('tab-register').classList.toggle('active', !isLogin);
     }
 }
 
